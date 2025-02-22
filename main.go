@@ -25,6 +25,7 @@ func main() {
 	// Выполняем миграцию базы данных
 	err = config.DB.AutoMigrate(
 		&users.User{},
+		&users.TrustedContact{},
 		&users.GoogleUser{},
 	)
 	if err != nil {

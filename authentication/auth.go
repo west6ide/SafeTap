@@ -17,29 +17,55 @@ import (
 var JwtKey = []byte(os.Getenv("JWT_SECRET"))
 
 type Claims struct {
-	Email  string `json:"email"`
-	Role   string `json:"role"`
+	Phone  string `json:"phone"`
 	UserID uint   `json:"user_id"`
 	jwt.StandardClaims
 }
 
 func Register(w http.ResponseWriter, r *http.Request) {
-	var user users.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	// Структура для получения JSON-запроса
+	var input struct {
+		Name            string `json:"name"`
+		Phone           string `json:"phone"`
+		Password        string `json:"password"`
+		ConfirmPassword string `json:"confirmPassword"`
+	}
+
+	// Декодируем JSON-запрос
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
 
+	// Проверяем, что пароль и подтверждающий пароль совпадают
+	if input.Password != input.ConfirmPassword {
+		http.Error(w, "Passwords do not match", http.StatusBadRequest)
+		return
+	}
+
+	// Проверяем, существует ли номер телефона в базе данных
+	var existingUser users.User
+	if err := config.DB.Where("phone = ?", input.Phone).First(&existingUser).Error; err == nil {
+		http.Error(w, "Phone number already registered", http.StatusConflict)
+		return
+	}
+
 	// Хэшируем пароль
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {
 		http.Error(w, "Error hashing password", http.StatusInternalServerError)
 		return
 	}
-	user.Password = string(hashedPassword)
-	user.Provider = "local"
 
-	// Создаем запись в базе данных
+	// Создаем пользователя
+	user := users.User{
+		Name:     input.Name,
+		Phone:    input.Phone,
+		Password: string(hashedPassword),
+		Provider: "local",
+	}
+
+	// Сохраняем пользователя в базе данных
 	if err := config.DB.Create(&user).Error; err != nil {
 		http.Error(w, fmt.Sprintf("Error creating user: %v", err), http.StatusInternalServerError)
 		return
@@ -47,8 +73,8 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("User registered with ID: %d\n", user.ID)
 
-	// Генерируем токен
-	tokenString, err := generateToken(user.ID, user.Email)
+	// Генерируем JWT-токен
+	tokenString, err := generateToken(user.ID, user.Phone)
 	if err != nil {
 		http.Error(w, "Error generating token", http.StatusInternalServerError)
 		return
@@ -60,7 +86,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Возвращаем токен
+	// Отправляем JSON-ответ с токеном
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
@@ -130,11 +156,11 @@ func ValidateToken(r *http.Request) (*users.User, error) {
 	return &user, nil // Возвращаем полную модель пользователя
 }
 
-func generateToken(userID uint, email string) (string, error) {
+func generateToken(userID uint, phone string) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		UserID: userID,
-		Email:  email,
+		Phone:  phone,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 		},
@@ -166,7 +192,7 @@ func GetProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var user users.User
-	if err := config.DB.Where("email = ? AND provider = ?", claims.Email, "local").First(&user).Error; err != nil {
+	if err := config.DB.Where("email = ? AND provider = ?", claims.Phone, "local").First(&user).Error; err != nil {
 		http.Error(w, "User not found", http.StatusUnauthorized)
 		return
 	}
