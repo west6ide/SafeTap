@@ -92,21 +92,27 @@ func Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	var inputUser users.User
-	if err := json.NewDecoder(r.Body).Decode(&inputUser); err != nil {
+	// Структура для получения JSON-запроса
+	var input struct {
+		Phone    string `json:"phone"`
+		Password string `json:"password"`
+	}
+
+	// Декодируем JSON-запрос
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
 
-	// Проверяем пользователя в базе данных
+	// Проверяем, существует ли пользователь с таким номером
 	var user users.User
-	if err := config.DB.Where("email = ?", inputUser.Email).First(&user).Error; err != nil {
+	if err := config.DB.Where("phone = ?", input.Phone).First(&user).Error; err != nil {
 		http.Error(w, "User not found", http.StatusUnauthorized)
 		return
 	}
 
-	// Сравниваем хэш пароля
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(inputUser.Password)); err != nil {
+	// Проверяем пароль
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
 		http.Error(w, "Invalid password", http.StatusUnauthorized)
 		return
 	}
@@ -114,7 +120,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("User logged in with ID: %d\n", user.ID)
 
 	// Генерируем токен
-	tokenString, err := generateToken(user.ID, user.Email)
+	tokenString, err := generateToken(user.ID, user.Phone)
 	if err != nil {
 		http.Error(w, "Error generating token", http.StatusInternalServerError)
 		return
@@ -126,7 +132,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Возвращаем токен
+	// Отправляем токен пользователю
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
