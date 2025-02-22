@@ -1,0 +1,91 @@
+package main
+
+import (
+	"Diploma/authentication"
+	"Diploma/config"
+	"Diploma/users"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+)
+
+func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Устанавливаем порт по умолчанию
+	}
+
+	// Инициализируем базу данных
+	err := config.InitDB()
+	if err != nil {
+		log.Fatalf("Ошибка инициализации базы данных: %v", err)
+	}
+
+	// Выполняем миграцию базы данных
+	err = config.DB.AutoMigrate(
+		&users.User{},
+		&users.GoogleUser{},
+	)
+	if err != nil {
+		log.Fatalf("Ошибка миграции базы данных: %v", err)
+	}
+
+	// Проверка подключения к базе данных
+	sqlDB, err := config.DB.DB()
+	if err != nil {
+		log.Fatalf("Ошибка получения подключения к базе данных: %v", err)
+	}
+
+	err = sqlDB.Ping()
+	if err != nil {
+		log.Fatalf("Ошибка подключения к базе данных: %v", err)
+	} else {
+		log.Println("Подключение к базе данных успешно")
+	}
+
+	// authorization endpoints
+	http.HandleFunc("/", handleHome)
+	http.HandleFunc("/login/google", authentication.HandleGoogleLogin)
+	http.HandleFunc("/callback/google", authentication.HandleGoogleCallback)
+
+	http.HandleFunc("/register", authentication.Register)
+	http.HandleFunc("/login", authentication.Login)
+	http.HandleFunc("/profile", authentication.GetProfile)
+	http.HandleFunc("/logout", authentication.Logout)
+
+	// Запускаем сервер
+	log.Printf("Сервер запущен на порту %s", port)
+	err = http.ListenAndServe(":"+port, nil)
+	if err != nil {
+		log.Fatalf("Ошибка запуска сервера: %v", err)
+	}
+
+}
+
+func handleHome(w http.ResponseWriter, r *http.Request) {
+	session, _ := config.Store.Get(r, "session-name")
+	user := session.Values["user"]
+
+	if user != nil {
+		switch usr := user.(type) {
+		case users.GoogleUser:
+			html := fmt.Sprintf(`<html><body>
+				<p>Добро пожаловать, %s!</p>
+				<a href="/logout">Выйти</a><br>
+				<form action="/google-logout" method="post">
+					<button type="submit">Выйти из Google</button>
+				</form>
+			</body></html>`, usr.FirstName)
+			fmt.Fprint(w, html)
+		default:
+			http.Error(w, "Неизвестный тип пользователя", http.StatusInternalServerError)
+		}
+	} else {
+		html := `<html><body>
+                   <a href="/login/google">Войти через Google</a><br>
+                   <a href="/login/youtube">Войти через Google</a><br>
+                 </body></html>`
+		fmt.Fprint(w, html)
+	}
+}
