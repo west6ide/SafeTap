@@ -22,9 +22,9 @@ type User struct {
 }
 
 type TrustedContact struct {
-	gorm.Model
-	UserID       uint
-	ContactName  string
-	ContactPhone string
-	ContactEmail string
+	ID          uint      `gorm:"primaryKey" json:"id"`
+	UserID      uint      `gorm:"not null" json:"user_id"`
+	PhoneNumber string    `gorm:"not null;uniqueIndex:idx_user_phone" json:"phone_number"`
+	PushToken   string    `json:"push_token,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
 }

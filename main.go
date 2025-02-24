@@ -1,8 +1,9 @@
 package main
 
 import (
-	"Diploma/authentication"
 	"Diploma/config"
+	"Diploma/controller"
+	authentication2 "Diploma/controller/authentication"
 	"Diploma/users"
 	"fmt"
 	"log"
@@ -24,7 +25,10 @@ func main() {
 	}
 
 	// Миграция базы данных
-	if err := config.DB.AutoMigrate(&users.User{}, &users.TrustedContact{}, &users.GoogleUser{}); err != nil {
+	if err := config.DB.AutoMigrate(
+		&users.User{},
+		&users.TrustedContact{},
+		&users.GoogleUser{}); err != nil {
 		log.Fatalf("Ошибка миграции БД: %v", err)
 	}
 
@@ -44,12 +48,15 @@ func main() {
 
 	// Эндпоинты
 	handler.HandleFunc("/", handleHome)
-	handler.HandleFunc("/login/google", authentication.HandleGoogleLogin)
-	handler.HandleFunc("/callback/google", authentication.HandleGoogleCallback)
-	handler.HandleFunc("/register", authentication.Register)
-	handler.HandleFunc("/login", authentication.Login)
-	handler.HandleFunc("/profile", authentication.GetProfile)
-	handler.HandleFunc("/logout", authentication.Logout)
+	handler.HandleFunc("/login/google", authentication2.HandleGoogleLogin)
+	handler.HandleFunc("/callback/google", authentication2.HandleGoogleCallback)
+	handler.HandleFunc("/register", authentication2.Register)
+	handler.HandleFunc("/login", authentication2.Login)
+	handler.HandleFunc("/profile", authentication2.GetProfile)
+	handler.HandleFunc("/logout", authentication2.Logout)
+
+	handler.HandleFunc("/contacts/add", controller.AddEmergencyContact)
+	handler.HandleFunc("/contacts/delete", controller.DeleteEmergencyContact)
 
 	// Настройка CORS
 	corsHandler := cors.New(cors.Options{
