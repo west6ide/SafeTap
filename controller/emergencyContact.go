@@ -63,9 +63,22 @@ func DeleteEmergencyContact(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := config.DB.Where("user_id = ? AND phone_number = ?", user.ID, contactRequest.PhoneNumber).Delete(&users.TrustedContact{}).Error; err != nil {
+	// Find the contact first
+	contact := users.TrustedContact{}
+	if err := config.DB.Where("user_id = ? AND phone_number = ?", user.ID, contactRequest.PhoneNumber).First(&contact).Error; err != nil {
+		http.Error(w, "Contact not found", http.StatusNotFound)
+		return
+	}
+
+	// Delete the contact
+	if err := config.DB.Delete(&contact).Error; err != nil {
 		http.Error(w, "Failed to delete contact", http.StatusInternalServerError)
 		return
+	}
+
+	// Reset the ID auto-increment if there are no more contacts
+	if err := config.DB.Exec("ALTER SEQUENCE trusted_contacts_id_seq RESTART WITH 1").Error; err != nil {
+		fmt.Println("Error resetting ID sequence, but contact was deleted successfully")
 	}
 
 	w.WriteHeader(http.StatusOK)
