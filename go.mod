@@ -5,6 +5,7 @@ go 1.23.1
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gorilla/sessions v1.4.0
+	github.com/rs/cors v1.11.1
 	golang.org/x/crypto v0.33.0
 	golang.org/x/oauth2 v0.26.0
 	gorm.io/driver/postgres v1.5.11

@@ -8,60 +8,61 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/rs/cors"
 )
 
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080" // Устанавливаем порт по умолчанию
+		port = "8080"
 	}
 
-	// Инициализируем базу данных
-	err := config.InitDB()
-	if err != nil {
-		log.Fatalf("Ошибка инициализации базы данных: %v", err)
+	// Инициализация базы данных
+	if err := config.InitDB(); err != nil {
+		log.Fatalf("Ошибка инициализации БД: %v", err)
 	}
 
-	// Выполняем миграцию базы данных
-	err = config.DB.AutoMigrate(
-		&users.User{},
-		&users.TrustedContact{},
-		&users.GoogleUser{},
-	)
-	if err != nil {
-		log.Fatalf("Ошибка миграции базы данных: %v", err)
+	// Миграция базы данных
+	if err := config.DB.AutoMigrate(&users.User{}, &users.TrustedContact{}, &users.GoogleUser{}); err != nil {
+		log.Fatalf("Ошибка миграции БД: %v", err)
 	}
 
-	// Проверка подключения к базе данных
+	// Проверка подключения к БД
 	sqlDB, err := config.DB.DB()
 	if err != nil {
-		log.Fatalf("Ошибка получения подключения к базе данных: %v", err)
+		log.Fatalf("Ошибка получения подключения к БД: %v", err)
 	}
 
-	err = sqlDB.Ping()
-	if err != nil {
-		log.Fatalf("Ошибка подключения к базе данных: %v", err)
+	if err = sqlDB.Ping(); err != nil {
+		log.Fatalf("Ошибка подключения к БД: %v", err)
 	} else {
-		log.Println("Подключение к базе данных успешно")
+		log.Println("Подключение к БД успешно")
 	}
 
-	// authorization endpoints
-	http.HandleFunc("/", handleHome)
-	http.HandleFunc("/login/google", authentication.HandleGoogleLogin)
-	http.HandleFunc("/callback/google", authentication.HandleGoogleCallback)
+	handler := http.NewServeMux()
 
-	http.HandleFunc("/register", authentication.Register)
-	http.HandleFunc("/login", authentication.Login)
-	http.HandleFunc("/profile", authentication.GetProfile)
-	http.HandleFunc("/logout", authentication.Logout)
+	// Эндпоинты
+	handler.HandleFunc("/", handleHome)
+	handler.HandleFunc("/login/google", authentication.HandleGoogleLogin)
+	handler.HandleFunc("/callback/google", authentication.HandleGoogleCallback)
+	handler.HandleFunc("/register", authentication.Register)
+	handler.HandleFunc("/login", authentication.Login)
+	handler.HandleFunc("/profile", authentication.GetProfile)
+	handler.HandleFunc("/logout", authentication.Logout)
 
-	// Запускаем сервер
+	// Настройка CORS
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}).Handler(handler)
+
 	log.Printf("Сервер запущен на порту %s", port)
-	err = http.ListenAndServe(":"+port, nil)
-	if err != nil {
+	if err := http.ListenAndServe(":"+port, corsHandler); err != nil {
 		log.Fatalf("Ошибка запуска сервера: %v", err)
 	}
-
 }
 
 func handleHome(w http.ResponseWriter, r *http.Request) {
@@ -71,21 +72,22 @@ func handleHome(w http.ResponseWriter, r *http.Request) {
 	if user != nil {
 		switch usr := user.(type) {
 		case users.GoogleUser:
-			html := fmt.Sprintf(`<html><body>
+			html := fmt.Sprintf(`
+				<html><body>
 				<p>Добро пожаловать, %s!</p>
 				<a href="/logout">Выйти</a><br>
 				<form action="/google-logout" method="post">
 					<button type="submit">Выйти из Google</button>
 				</form>
-			</body></html>`, usr.FirstName)
+				</body></html>`, usr.FirstName)
 			fmt.Fprint(w, html)
 		default:
 			http.Error(w, "Неизвестный тип пользователя", http.StatusInternalServerError)
 		}
 	} else {
 		html := `<html><body>
-                   <a href="/login/google">Войти через Google</a><br>
-                 </body></html>`
+		<a href="/login/google">Войти через Google</a><br>
+		</body></html>`
 		fmt.Fprint(w, html)
 	}
 }
