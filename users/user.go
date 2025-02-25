@@ -11,7 +11,8 @@ type User struct {
 	Name         string
 	Phone        string
 	Email        string
-	Password     string           `json:"-" gorm:"not null"`
+	Password     string `json:"-" gorm:"not null"`
+	Avatar       string
 	Contacts     []TrustedContact `gorm:"foreignKey:UserID"`
 	AccessToken  string           `json:"accessToken"`
 	RefreshToken string           `json:"refreshToken"`

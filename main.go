@@ -53,6 +53,7 @@ func main() {
 	handler.HandleFunc("/register", authentication2.Register)
 	handler.HandleFunc("/login", authentication2.Login)
 	handler.HandleFunc("/profile", authentication2.GetProfile)
+	handler.HandleFunc("/profile/update", controller.UpdateProfile)
 	handler.HandleFunc("/logout", authentication2.Logout)
 
 	handler.HandleFunc("/contacts/add", controller.AddEmergencyContact)
