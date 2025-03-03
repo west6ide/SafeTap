@@ -29,3 +29,11 @@ type TrustedContact struct {
 	PushToken   string    `json:"push_token,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 }
+
+type Location struct {
+	gorm.Model
+	UserID string  `json:"userId"`
+	Lat    float64 `json:"lat"`
+	Lng    float64 `json:"lng"`
+	SOS    bool    `json:"sos"`
+}
