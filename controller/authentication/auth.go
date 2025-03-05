@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -138,11 +139,19 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func ValidateJWT(tokenStr string) (*Claims, error) {
+	if tokenStr == "" {
+		return nil, errors.New("token is empty")
+	}
+
+	tokenStr = strings.TrimSpace(tokenStr) // Убираем пробелы и лишние символы
+
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return JwtKey, nil
 	})
+
 	if err != nil {
-		return nil, err
+		log.Println("❌ Ошибка JWT:", err)
+		return nil, errors.New("invalid token")
 	}
 
 	claims, ok := token.Claims.(*Claims)
