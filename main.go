@@ -57,8 +57,11 @@ func main() {
 	handler.HandleFunc("/profile/update", controller.UpdateProfile)
 	handler.HandleFunc("/logout", authentication2.Logout)
 
-	handler.HandleFunc("/contacts/add", controller.AddEmergencyContact)
-	handler.HandleFunc("/contacts/delete", controller.DeleteEmergencyContact)
+	handler.HandleFunc("/contacts/add", controller.AddEmergencyContact)       // Добавление
+	handler.HandleFunc("/contacts", controller.GetEmergencyContacts)          // Получение всех контактов
+	handler.HandleFunc("/contacts/update", controller.UpdateEmergencyContact) // Обновление
+	handler.HandleFunc("/contacts/delete", controller.DeleteEmergencyContact) // Удаление
+
 	handler.HandleFunc("/ws/location", controller.HandleLiveLocation)
 
 	// Настройка CORS
