@@ -137,29 +137,20 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
 
-func ValidateToken(r *http.Request) (*users.User, error) {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		return nil, errors.New("missing authorization header")
-	}
-
-	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-	claims := &Claims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+func ValidateJWT(tokenStr string) (*Claims, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return JwtKey, nil
 	})
-	if err != nil || !token.Valid {
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(*Claims)
+	if !ok || !token.Valid {
 		return nil, errors.New("invalid token")
 	}
 
-	// Получаем пользователя из базы данных
-	var user users.User
-	if err := config.DB.Where("id = ? AND access_token = ?", claims.UserID, tokenString).First(&user).Error; err != nil {
-		return nil, errors.New("access token mismatch")
-	}
-
-	fmt.Printf("Token validated with userID: %d\n", user.ID)
-	return &user, nil // Возвращаем полную модель пользователя
+	return claims, nil
 }
 
 func generateToken(userID uint, phone string) (string, error) {

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"Diploma/config"
+	"Diploma/controller/authentication"
 	"Diploma/users"
 	"encoding/json"
 	"github.com/gorilla/websocket"
@@ -12,53 +13,60 @@ import (
 	"time"
 )
 
-var (
-	upgrader   = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
-	clients    = make(map[*websocket.Conn]uint) // uint вместо string
-	locationMu sync.Mutex
-)
+var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+var clients = make(map[*websocket.Conn]uint)
+var locationMu sync.Mutex
 
 type LocationUpdate struct {
-	UserID uint    `json:"user_id"`
-	Lat    float64 `json:"lat"`
-	Lng    float64 `json:"lng"`
+	Lat float64 `json:"lat"`
+	Lng float64 `json:"lng"`
 }
 
 func HandleLiveLocation(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		log.Println("❌ Ошибка: JWT не передан")
+		http.Error(w, "Unauthorized: missing token", http.StatusUnauthorized)
+		return
+	}
+
+	claims, err := authentication.ValidateJWT(token)
+	if err != nil {
+		log.Println("❌ Ошибка JWT:", err)
+		http.Error(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	// Убеждаемся, что ошибок нет перед установкой WebSocket
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println("WebSocket upgrade error:", err)
+		log.Println("❌ WebSocket ошибка:", err)
 		return
 	}
 	defer ws.Close()
 
-	user, err := authenticateUser(r)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+	log.Printf("✅ Подключение пользователя %d к WebSocket\n", claims.UserID)
 
 	locationMu.Lock()
-	clients[ws] = user.ID
+	clients[ws] = claims.UserID
 	locationMu.Unlock()
 
 	for {
 		var loc LocationUpdate
-		if err := ws.ReadJSON(&loc); err != nil {
-			log.Println("Error reading location:", err)
+		err := ws.ReadJSON(&loc)
+		if err != nil {
+			log.Println("❌ Ошибка чтения WebSocket:", err)
 			break
 		}
 
-		// Сохраняем координаты в БД
 		config.DB.Save(&users.LiveLocation{
-			UserID:    user.ID,
+			UserID:    claims.UserID,
 			Lat:       loc.Lat,
 			Lng:       loc.Lng,
 			UpdatedAt: time.Now(),
 		})
 
-		// Отправляем обновления экстренным контактам
-		broadcastLocation(user.ID)
+		broadcastLocation(claims.UserID)
 	}
 }
 
