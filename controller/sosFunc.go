@@ -23,6 +23,7 @@ type LocationUpdate struct {
 }
 
 func HandleLiveLocation(w http.ResponseWriter, r *http.Request) {
+	log.Println("🔄 Новое WebSocket-подключение")
 	token := r.URL.Query().Get("token")
 	if token == "" {
 		log.Println("❌ Ошибка: JWT не передан")
@@ -37,7 +38,6 @@ func HandleLiveLocation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Убеждаемся, что ошибок нет перед установкой WebSocket
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("❌ WebSocket ошибка:", err)
@@ -45,12 +45,21 @@ func HandleLiveLocation(w http.ResponseWriter, r *http.Request) {
 	}
 	defer ws.Close()
 
-	log.Printf("✅ Подключение пользователя %d к WebSocket\n", claims.UserID)
+	log.Printf("✅ Подключение установлено для пользователя ID=%d\n", claims.UserID)
 
+	// Добавляем WebSocket клиента
 	locationMu.Lock()
 	clients[ws] = claims.UserID
 	locationMu.Unlock()
 
+	// Ping-Pong для поддержания соединения
+	ws.SetReadDeadline(time.Now().Add(60 * time.Second))
+	ws.SetPongHandler(func(string) error {
+		ws.SetReadDeadline(time.Now().Add(60 * time.Second))
+		return nil
+	})
+
+	// Обработка сообщений WebSocket
 	for {
 		var loc LocationUpdate
 		err := ws.ReadJSON(&loc)
@@ -59,13 +68,21 @@ func HandleLiveLocation(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		config.DB.Save(&users.LiveLocation{
+		// Сохранение координат в БД
+		location := users.LiveLocation{
 			UserID:    claims.UserID,
 			Lat:       loc.Lat,
 			Lng:       loc.Lng,
 			UpdatedAt: time.Now(),
-		})
+		}
+		if err := config.DB.Save(&location).Error; err != nil {
+			log.Println("❌ Ошибка сохранения локации:", err)
+			continue
+		}
 
+		log.Printf("✅ Локация обновлена: ID=%d, Lat=%.6f, Lng=%.6f\n", claims.UserID, loc.Lat, loc.Lng)
+
+		// Рассылка локации экстренным контактам
 		broadcastLocation(claims.UserID)
 	}
 }
@@ -93,12 +110,14 @@ func broadcastLocation(userID uint) {
 	var locations []users.LiveLocation
 	config.DB.Where("user_id IN ?", contactIDs).Find(&locations)
 
-	// Отправляем всем подключённым клиентам
+	log.Printf("🔄 Найдено %d координат для отправки WebSocket клиентам", len(locations))
+
+	// Отправляем данные всем подключённым клиентам
 	locationJSON, _ := json.Marshal(locations)
 	for client := range clients {
 		err := client.WriteMessage(websocket.TextMessage, locationJSON)
 		if err != nil {
-			log.Println("WebSocket error:", err)
+			log.Println("❌ WebSocket ошибка отправки:", err)
 			client.Close()
 			delete(clients, client)
 		}
