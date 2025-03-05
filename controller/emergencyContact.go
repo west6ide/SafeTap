@@ -79,50 +79,6 @@ func GetEmergencyContacts(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(contacts)
 }
 
-// 📌 Обновление номера экстренного контакта (Update)
-func UpdateEmergencyContact(w http.ResponseWriter, r *http.Request) {
-	user, err := authenticateUser(r)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	var updateRequest struct {
-		OldPhoneNumber string `json:"old_phone_number"`
-		NewPhoneNumber string `json:"new_phone_number"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&updateRequest); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
-		return
-	}
-
-	var contact users.TrustedContact
-	if err := config.DB.Where("user_id = ? AND phone_number = ?", user.ID, updateRequest.OldPhoneNumber).First(&contact).Error; err != nil {
-		http.Error(w, "Contact not found", http.StatusNotFound)
-		return
-	}
-
-	// Проверяем, есть ли новый номер в базе пользователей
-	var newContactUser users.User
-	if err := config.DB.Where("phone = ?", updateRequest.NewPhoneNumber).First(&newContactUser).Error; err != nil {
-		http.Error(w, "New phone number not found in users", http.StatusNotFound)
-		return
-	}
-
-	// Обновляем номер телефона и ID пользователя
-	contact.PhoneNumber = updateRequest.NewPhoneNumber
-	contact.ContactID = strconv.Itoa(int(newContactUser.ID))
-
-	if err := config.DB.Save(&contact).Error; err != nil {
-		http.Error(w, "Failed to update contact", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, "Emergency contact updated successfully")
-}
-
 // 📌 Удаление экстренного контакта (Delete)
 func DeleteEmergencyContact(w http.ResponseWriter, r *http.Request) {
 	user, err := authenticateUser(r)
