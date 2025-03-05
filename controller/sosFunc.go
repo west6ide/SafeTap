@@ -3,110 +3,96 @@ package controller
 import (
 	"Diploma/config"
 	"Diploma/users"
+	"encoding/json"
+	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
-
-	"github.com/gorilla/websocket"
 )
-
-var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
-
-type Connection struct {
-	WS       *websocket.Conn
-	UserID   string
-	Contacts []string
-}
 
 var (
-	connections = make(map[string]*Connection) // userID -> connection
-	mu          sync.Mutex
+	upgrader   = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+	clients    = make(map[*websocket.Conn]uint) // uint вместо string
+	locationMu sync.Mutex
 )
 
-// Обработчик подключения
-func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
+type LocationUpdate struct {
+	UserID uint    `json:"user_id"`
+	Lat    float64 `json:"lat"`
+	Lng    float64 `json:"lng"`
+}
+
+func HandleLiveLocation(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println("Failed to upgrade websocket:", err)
+		log.Println("WebSocket upgrade error:", err)
 		return
 	}
 	defer ws.Close()
 
-	var conn *Connection
+	user, err := authenticateUser(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	locationMu.Lock()
+	clients[ws] = user.ID
+	locationMu.Unlock()
 
 	for {
-		var loc users.Location
+		var loc LocationUpdate
 		if err := ws.ReadJSON(&loc); err != nil {
-			log.Println("Read error:", err)
+			log.Println("Error reading location:", err)
 			break
 		}
 
-		mu.Lock()
-		if conn == nil {
-			// При первом сообщении регистрируем пользователя
-			contacts := getUserContacts(loc.UserID)
-			conn = &Connection{
-				WS:       ws,
-				UserID:   loc.UserID,
-				Contacts: contacts,
-			}
-			connections[loc.UserID] = conn
-			log.Printf("User %s connected with %d contacts\n", loc.UserID, len(contacts))
+		// Сохраняем координаты в БД
+		config.DB.Save(&users.LiveLocation{
+			UserID:    user.ID,
+			Lat:       loc.Lat,
+			Lng:       loc.Lng,
+			UpdatedAt: time.Now(),
+		})
+
+		// Отправляем обновления экстренным контактам
+		broadcastLocation(user.ID)
+	}
+}
+
+// Передаёт координаты экстренным контактам
+func broadcastLocation(userID uint) {
+	locationMu.Lock()
+	defer locationMu.Unlock()
+
+	// Получаем список экстренных контактов
+	var contacts []users.TrustedContact
+	config.DB.Where("user_id = ?", userID).Find(&contacts)
+
+	var contactIDs []uint
+	for _, contact := range contacts {
+		contactID, err := strconv.ParseUint(contact.ContactID, 10, 32)
+		if err != nil {
+			log.Println("Ошибка преобразования ContactID:", err)
+			continue
 		}
-		mu.Unlock()
-
-		// Сохраняем координаты (если нужно)
-		saveLocation(loc)
-
-		// Рассылаем обновление контактам
-		broadcastLocationToContacts(loc)
+		contactIDs = append(contactIDs, uint(contactID))
 	}
 
-	mu.Lock()
-	delete(connections, conn.UserID)
-	mu.Unlock()
-}
+	// Получаем местоположение всех контактов
+	var locations []users.LiveLocation
+	config.DB.Where("user_id IN ?", contactIDs).Find(&locations)
 
-// Получаем список контактов для пользователя
-func getUserContacts(userID string) []string {
-	var contacts []string
-	rows, err := config.DB.Raw(`
-        SELECT u.username 
-        FROM emergency_contacts ec
-        JOIN users u ON ec.contact_id = u.id
-        WHERE ec.user_id = (SELECT id FROM users WHERE username = ?)
-    `, userID).Rows()
-	if err != nil {
-		log.Printf("Failed to fetch contacts for %s: %v\n", userID, err)
-		return contacts
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var contact string
-		rows.Scan(&contact)
-		contacts = append(contacts, contact)
-	}
-	return contacts
-}
-
-// Сохраняем локацию в базу (если нужно)
-func saveLocation(loc users.Location) {
-	config.DB.Exec("INSERT INTO locations (user_id, lat, lng, created_at) VALUES ((SELECT id FROM users WHERE username = ?), ?, ?, ?)",
-		loc.UserID, loc.Lat, loc.Lng, time.Now())
-}
-
-// Оповещаем все контакты о новой локации
-func broadcastLocationToContacts(loc users.Location) {
-	mu.Lock()
-	defer mu.Unlock()
-
-	if conn, exists := connections[loc.UserID]; exists {
-		for _, contact := range conn.Contacts {
-			if contactConn, ok := connections[contact]; ok {
-				contactConn.WS.WriteJSON(loc)
-			}
+	// Отправляем всем подключённым клиентам
+	locationJSON, _ := json.Marshal(locations)
+	for client := range clients {
+		err := client.WriteMessage(websocket.TextMessage, locationJSON)
+		if err != nil {
+			log.Println("WebSocket error:", err)
+			client.Close()
+			delete(clients, client)
 		}
 	}
 }

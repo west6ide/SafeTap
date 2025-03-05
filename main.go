@@ -28,7 +28,7 @@ func main() {
 	if err := config.DB.AutoMigrate(
 		&users.User{},
 		&users.TrustedContact{},
-		&users.Location{},
+		&users.LiveLocation{},
 		&users.GoogleUser{}); err != nil {
 		log.Fatalf("Ошибка миграции БД: %v", err)
 	}
@@ -59,7 +59,7 @@ func main() {
 
 	handler.HandleFunc("/contacts/add", controller.AddEmergencyContact)
 	handler.HandleFunc("/contacts/delete", controller.DeleteEmergencyContact)
-	handler.HandleFunc("/ws", controller.HandleWebSocket)
+	handler.HandleFunc("/ws/location", controller.HandleLiveLocation)
 
 	// Настройка CORS
 	corsHandler := cors.New(cors.Options{
