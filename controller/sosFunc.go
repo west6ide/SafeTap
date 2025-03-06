@@ -61,6 +61,25 @@ func HandleLiveLocation(w http.ResponseWriter, r *http.Request) {
 		return nil
 	})
 
+	// Проверяем, есть ли уже запись о локации в базе
+	var location users.LiveLocation
+	result := config.DB.Where("user_id = ?", claims.UserID).First(&location)
+
+	if result.Error != nil {
+		// Если запись не найдена, создаём её
+		location = users.LiveLocation{
+			UserID:    claims.UserID,
+			Lat:       0, // Начальные значения (по умолчанию)
+			Lng:       0,
+			UpdatedAt: time.Now(),
+		}
+		if err := config.DB.Create(&location).Error; err != nil {
+			log.Println("❌ Ошибка создания локации:", err)
+			return
+		}
+		log.Printf("✅ Локация создана в базе: ID=%d, Lat=%.6f, Lng=%.6f\n", claims.UserID, location.Lat, location.Lng)
+	}
+
 	// Чтение сообщений (координат) от клиента
 	for {
 		var loc LocationUpdate
@@ -70,35 +89,17 @@ func HandleLiveLocation(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		var location users.LiveLocation
+		// Обновляем координаты
+		location.Lat = loc.Lat
+		location.Lng = loc.Lng
+		location.UpdatedAt = time.Now()
 
-		// Проверяем, есть ли уже координаты пользователя
-		result := config.DB.Where("user_id = ?", claims.UserID).First(&location)
-		if result.RowsAffected == 0 {
-			// Если записи нет, создаём новую
-			location = users.LiveLocation{
-				UserID:    claims.UserID,
-				Lat:       loc.Lat,
-				Lng:       loc.Lng,
-				UpdatedAt: time.Now(),
-			}
-			if err := config.DB.Create(&location).Error; err != nil {
-				log.Println("❌ Ошибка создания локации:", err)
-				continue
-			}
-			log.Printf("✅ Локация создана: ID=%d, Lat=%.6f, Lng=%.6f\n", claims.UserID, loc.Lat, loc.Lng)
-		} else {
-			// Если запись есть, обновляем координаты
-			location.Lat = loc.Lat
-			location.Lng = loc.Lng
-			location.UpdatedAt = time.Now()
-
-			if err := config.DB.Save(&location).Error; err != nil {
-				log.Println("❌ Ошибка обновления локации:", err)
-				continue
-			}
-			log.Printf("✅ Локация обновлена: ID=%d, Lat=%.6f, Lng=%.6f\n", claims.UserID, loc.Lat, loc.Lng)
+		if err := config.DB.Save(&location).Error; err != nil {
+			log.Println("❌ Ошибка обновления локации:", err)
+			continue
 		}
+
+		log.Printf("✅ Локация обновлена: ID=%d, Lat=%.6f, Lng=%.6f\n", claims.UserID, loc.Lat, loc.Lng)
 
 		// Рассылка обновленных координат
 		broadcastLocation(claims.UserID)
