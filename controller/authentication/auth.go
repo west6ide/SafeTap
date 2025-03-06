@@ -6,9 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -20,11 +19,22 @@ var JwtKey = []byte(os.Getenv("JWT_SECRET"))
 type Claims struct {
 	Phone  string `json:"phone"`
 	UserID uint   `json:"user_id"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
+}
+
+func enableCORS(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 }
 
 func Register(w http.ResponseWriter, r *http.Request) {
 	// Структура для получения JSON-запроса
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	var input struct {
 		Name            string `json:"name"`
 		Phone           string `json:"phone"`
@@ -93,64 +103,74 @@ func Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	// Структура для получения JSON-запроса
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	var input struct {
 		Phone    string `json:"phone"`
 		Password string `json:"password"`
 	}
 
-	// Декодируем JSON-запрос
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
 
-	// Проверяем, существует ли пользователь с таким номером
 	var user users.User
 	if err := config.DB.Where("phone = ?", input.Phone).First(&user).Error; err != nil {
 		http.Error(w, "User not found", http.StatusUnauthorized)
 		return
 	}
 
-	// Проверяем пароль
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
 		http.Error(w, "Invalid password", http.StatusUnauthorized)
 		return
 	}
 
-	fmt.Printf("User logged in with ID: %d\n", user.ID)
-
-	// Генерируем токен
 	tokenString, err := generateToken(user.ID, user.Phone)
 	if err != nil {
 		http.Error(w, "Error generating token", http.StatusInternalServerError)
 		return
 	}
 
-	// Сохраняем токен в базе данных
-	if err := config.DB.Model(&user).Update("access_token", tokenString).Error; err != nil {
-		http.Error(w, "Error saving access token", http.StatusInternalServerError)
-		return
-	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    tokenString,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		Path:     "/",
+	})
 
-	// Отправляем токен пользователю
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
 
-func ValidateJWT(tokenStr string) (*Claims, error) {
-	if tokenStr == "" {
-		return nil, errors.New("token is empty")
+func generateToken(userID uint, phone string) (string, error) {
+	expirationTime := time.Now().Add(24 * time.Hour)
+	claims := &Claims{
+		UserID: userID,
+		Phone:  phone,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+		},
 	}
 
-	tokenStr = strings.TrimSpace(tokenStr) // Убираем пробелы и лишние символы
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(JwtKey)
+}
+
+func ValidateJWT(tokenStr string) (*Claims, error) {
+	tokenStr = strings.TrimPrefix(strings.TrimSpace(tokenStr), "Bearer ")
 
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return JwtKey, nil
 	})
 
 	if err != nil {
-		log.Println("❌ Ошибка JWT:", err)
 		return nil, errors.New("invalid token")
 	}
 
@@ -160,22 +180,6 @@ func ValidateJWT(tokenStr string) (*Claims, error) {
 	}
 
 	return claims, nil
-}
-
-func generateToken(userID uint, phone string) (string, error) {
-	expirationTime := time.Now().Add(24 * time.Hour)
-	claims := &Claims{
-		UserID: userID,
-		Phone:  phone,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
-		},
-	}
-
-	fmt.Printf("Generating token with userID: %d\n", userID)
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(JwtKey)
 }
 
 func GetProfile(w http.ResponseWriter, r *http.Request) {
