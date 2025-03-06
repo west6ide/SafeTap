@@ -8,13 +8,15 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 )
 
-var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
-var clients = make(map[*websocket.Conn]uint)
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool { return true },
+}
+
+var clients = make(map[*websocket.Conn]uint) // Хранение клиентов по UserID
 var locationMu sync.Mutex
 
 type LocationUpdate struct {
@@ -52,14 +54,14 @@ func HandleLiveLocation(w http.ResponseWriter, r *http.Request) {
 	clients[ws] = claims.UserID
 	locationMu.Unlock()
 
-	// Ping-Pong для поддержания соединения
+	// Поддержка ping/pong для предотвращения разрыва соединения
 	ws.SetReadDeadline(time.Now().Add(60 * time.Second))
 	ws.SetPongHandler(func(string) error {
 		ws.SetReadDeadline(time.Now().Add(60 * time.Second))
 		return nil
 	})
 
-	// Обработка сообщений WebSocket
+	// Чтение сообщений (координат) от клиента
 	for {
 		var loc LocationUpdate
 		err := ws.ReadJSON(&loc)
@@ -68,7 +70,7 @@ func HandleLiveLocation(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		// Сохранение координат в БД
+		// Сохраняем координаты в БД
 		location := users.LiveLocation{
 			UserID:    claims.UserID,
 			Lat:       loc.Lat,
@@ -82,38 +84,25 @@ func HandleLiveLocation(w http.ResponseWriter, r *http.Request) {
 
 		log.Printf("✅ Локация обновлена: ID=%d, Lat=%.6f, Lng=%.6f\n", claims.UserID, loc.Lat, loc.Lng)
 
-		// Рассылка локации экстренным контактам
+		// Рассылка обновленных координат
 		broadcastLocation(claims.UserID)
 	}
 }
 
-// Передаёт координаты экстренным контактам
+// Рассылает данные всем экстренным контактам
 func broadcastLocation(userID uint) {
 	locationMu.Lock()
 	defer locationMu.Unlock()
 
-	// Получаем список экстренных контактов
 	var contacts []users.TrustedContact
 	config.DB.Where("user_id = ?", userID).Find(&contacts)
 
-	var contactIDs []uint
-	for _, contact := range contacts {
-		contactID, err := strconv.ParseUint(contact.ContactID, 10, 32)
-		if err != nil {
-			log.Println("Ошибка преобразования ContactID:", err)
-			continue
-		}
-		contactIDs = append(contactIDs, uint(contactID))
-	}
-
-	// Получаем местоположение всех контактов
 	var locations []users.LiveLocation
-	config.DB.Where("user_id IN ?", contactIDs).Find(&locations)
+	config.DB.Where("user_id = ?", userID).Find(&locations)
 
-	log.Printf("🔄 Найдено %d координат для отправки WebSocket клиентам", len(locations))
-
-	// Отправляем данные всем подключённым клиентам
 	locationJSON, _ := json.Marshal(locations)
+	log.Printf("📡 Отправка координат %d клиентам\n", len(clients))
+
 	for client := range clients {
 		err := client.WriteMessage(websocket.TextMessage, locationJSON)
 		if err != nil {
