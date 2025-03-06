@@ -22,19 +22,24 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func enableCORS(w http.ResponseWriter) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+func enableCORS(w http.ResponseWriter, r *http.Request) {
+	origin := r.Header.Get("Origin")
+	if origin == "http://localhost:3000" || origin == "https://ваш-домен.com" {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Credentials", "true") // 👈 ВАЖНО!
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	}
 }
 
 func Register(w http.ResponseWriter, r *http.Request) {
-	// Структура для получения JSON-запроса
-	enableCORS(w)
+	enableCORS(w, r) // 👈 Добавить эту строку
+
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
+
 	var input struct {
 		Name            string `json:"name"`
 		Phone           string `json:"phone"`
@@ -103,7 +108,8 @@ func Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	enableCORS(w)
+	enableCORS(w, r) // 👈 Добавить эту строку
+
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusOK)
 		return
