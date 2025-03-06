@@ -70,19 +70,35 @@ func HandleLiveLocation(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		// Сохраняем координаты в БД
-		location := users.LiveLocation{
-			UserID:    claims.UserID,
-			Lat:       loc.Lat,
-			Lng:       loc.Lng,
-			UpdatedAt: time.Now(),
-		}
-		if err := config.DB.Save(&location).Error; err != nil {
-			log.Println("❌ Ошибка сохранения локации:", err)
-			continue
-		}
+		var location users.LiveLocation
 
-		log.Printf("✅ Локация обновлена: ID=%d, Lat=%.6f, Lng=%.6f\n", claims.UserID, loc.Lat, loc.Lng)
+		// Проверяем, есть ли уже координаты пользователя
+		result := config.DB.Where("user_id = ?", claims.UserID).First(&location)
+		if result.RowsAffected == 0 {
+			// Если записи нет, создаём новую
+			location = users.LiveLocation{
+				UserID:    claims.UserID,
+				Lat:       loc.Lat,
+				Lng:       loc.Lng,
+				UpdatedAt: time.Now(),
+			}
+			if err := config.DB.Create(&location).Error; err != nil {
+				log.Println("❌ Ошибка создания локации:", err)
+				continue
+			}
+			log.Printf("✅ Локация создана: ID=%d, Lat=%.6f, Lng=%.6f\n", claims.UserID, loc.Lat, loc.Lng)
+		} else {
+			// Если запись есть, обновляем координаты
+			location.Lat = loc.Lat
+			location.Lng = loc.Lng
+			location.UpdatedAt = time.Now()
+
+			if err := config.DB.Save(&location).Error; err != nil {
+				log.Println("❌ Ошибка обновления локации:", err)
+				continue
+			}
+			log.Printf("✅ Локация обновлена: ID=%d, Lat=%.6f, Lng=%.6f\n", claims.UserID, loc.Lat, loc.Lng)
+		}
 
 		// Рассылка обновленных координат
 		broadcastLocation(claims.UserID)
@@ -97,10 +113,10 @@ func broadcastLocation(userID uint) {
 	var contacts []users.TrustedContact
 	config.DB.Where("user_id = ?", userID).Find(&contacts)
 
-	var locations []users.LiveLocation
-	config.DB.Where("user_id = ?", userID).Find(&locations)
+	var location users.LiveLocation
+	config.DB.Where("user_id = ?", userID).First(&location)
 
-	locationJSON, _ := json.Marshal(locations)
+	locationJSON, _ := json.Marshal(location)
 	log.Printf("📡 Отправка координат %d клиентам\n", len(clients))
 
 	for client := range clients {
