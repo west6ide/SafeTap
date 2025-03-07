@@ -24,18 +24,33 @@ type Claims struct {
 
 func enableCORS(w http.ResponseWriter, r *http.Request) {
 	origin := r.Header.Get("Origin")
-	if origin == "http://localhost:3000" || origin == "https://ваш-домен.com" {
-		w.Header().Set("Access-Control-Allow-Origin", origin)
-		w.Header().Set("Access-Control-Allow-Credentials", "true") // 👈 ВАЖНО!
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+	allowedOrigins := []string{
+		"http://localhost:3000",
+		"https://safetap.onrender.com",
+	}
+
+	for _, allowedOrigin := range allowedOrigins {
+		if origin == allowedOrigin {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Credentials", "true") // 🔥 Важно для cookies!
+			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			break
+		}
+	}
+
+	// Разрешаем preflight-запросы
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
 	}
 }
 
 func Register(w http.ResponseWriter, r *http.Request) {
-	enableCORS(w, r) // 👈 Добавить эту строку
+	enableCORS(w, r)
 
-	if r.Method == "OPTIONS" {
+	if r.Method == "OPTIONS" { // ✅ Preflight-запросы
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -108,9 +123,9 @@ func Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	enableCORS(w, r) // 👈 Добавить эту строку
+	enableCORS(w, r)
 
-	if r.Method == "OPTIONS" {
+	if r.Method == "OPTIONS" { // ✅ Preflight-запросы
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -142,12 +157,13 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// ✅ Устанавливаем HttpOnly Cookie для защиты
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
 		Value:    tokenString,
 		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
+		Secure:   true, // ❗ Включите false для локальной отладки
+		SameSite: http.SameSiteLaxMode,
 		Path:     "/",
 	})
 
