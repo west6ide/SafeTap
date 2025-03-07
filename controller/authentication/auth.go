@@ -22,33 +22,31 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func enableCORS(w http.ResponseWriter, r *http.Request) {
+func setupCORS(w http.ResponseWriter, r *http.Request) {
 	origin := r.Header.Get("Origin")
 
-	allowedOrigins := []string{
-		"http://localhost:3000",
-		"https://safetap.onrender.com",
+	// 🔥 Разрешаем только определенные домены
+	allowedOrigins := map[string]bool{
+		"http://localhost:3000":        true,
+		"https://safetap.onrender.com": true,
 	}
 
-	for _, allowedOrigin := range allowedOrigins {
-		if origin == allowedOrigin {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-			w.Header().Set("Access-Control-Allow-Credentials", "true") // 🔥 Важно для cookies!
-			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-			break
-		}
+	if allowedOrigins[origin] {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Credentials", "true") // 🔥 Должно быть true для cookies и headers
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 	}
 
-	// Разрешаем preflight-запросы
+	// ✅ Обрабатываем preflight (OPTIONS) запрос
 	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 }
 
 func Register(w http.ResponseWriter, r *http.Request) {
-	enableCORS(w, r)
+	setupCORS(w, r)
 
 	if r.Method == "OPTIONS" { // ✅ Preflight-запросы
 		w.WriteHeader(http.StatusOK)
@@ -123,10 +121,10 @@ func Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	enableCORS(w, r)
+	setupCORS(w, r) // ✅ Добавлено
 
-	if r.Method == "OPTIONS" { // ✅ Preflight-запросы
-		w.WriteHeader(http.StatusOK)
+	if r.Method == "OPTIONS" { // ✅ Разрешаем preflight-запросы
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
@@ -157,12 +155,12 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ✅ Устанавливаем HttpOnly Cookie для защиты
+	// ✅ Устанавливаем HttpOnly Cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
 		Value:    tokenString,
 		HttpOnly: true,
-		Secure:   true, // ❗ Включите false для локальной отладки
+		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
 		Path:     "/",
 	})
