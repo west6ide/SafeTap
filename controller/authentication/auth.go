@@ -250,7 +250,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func getUserIdHandler(w http.ResponseWriter, r *http.Request) {
+func GetUserIdHandler(w http.ResponseWriter, r *http.Request) {
 	tokenString := r.Header.Get("Authorization")
 	if tokenString == "" {
 		http.Error(w, "Missing token", http.StatusUnauthorized)
