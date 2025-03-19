@@ -261,7 +261,7 @@ func getUserIdHandler(w http.ResponseWriter, r *http.Request) {
 
 	claims := jwt.MapClaims{}
 	token, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(config.GetJWTSecret()), nil
+		return []byte(config.GetJWTSecret()), nil // ✅ Теперь функция существует
 	})
 
 	if err != nil || !token.Valid {
