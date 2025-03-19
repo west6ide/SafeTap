@@ -3,7 +3,6 @@ package main
 import (
 	"Diploma/config"
 	"Diploma/controller"
-	sos "Diploma/controller/sos"
 	authentication2 "Diploma/controller/authentication"
 	"Diploma/users"
 	"fmt"
@@ -64,10 +63,8 @@ func main() {
 	handler.HandleFunc("/contacts", controller.GetEmergencyContacts)          // Получение всех контактов
 	handler.HandleFunc("/contacts/delete", controller.DeleteEmergencyContact) // Удаление
 
-	handler.HandleFunc("/register-push-token", sos.RegisterPushTokenHandler)
-	handler.HandleFunc("/sos", sos.SendSOSHandler)
-	handler.HandleFunc("/getUserToken", sos.GetUserIdHandler)
-	handler.HandleFunc("/getUserId", sos.GetUserTokenHandler)
+	handler.HandleFunc("/register-push-token", controller.RegisterPushTokenHandler)
+	handler.HandleFunc("/sos", controller.SendSOSHandler)
 
 
 	// Настройка CORS

@@ -2,10 +2,12 @@ package config
 
 import (
 	"fmt"
+	"log"
+	"os"
+
 	"github.com/gorilla/sessions"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"os"
 )
 
 var (
@@ -26,4 +28,12 @@ func InitDB() error { // Функция теперь возвращает оши
 	}
 	fmt.Println("Соединение с базой данных успешно")
 	return nil // Возвращаем nil, если всё прошло успешно
+}
+
+func GetJWTSecret() string {
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		log.Fatal("❌ Ошибка: JWT_SECRET не задан в переменных окружения!")
+	}
+	return secret
 }
