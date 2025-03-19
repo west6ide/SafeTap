@@ -66,9 +66,8 @@ func main() {
 
 	handler.HandleFunc("/register-push-token", sos.RegisterPushTokenHandler)
 	handler.HandleFunc("/sos", sos.SendSOSHandler)
-
-	handler.HandleFunc("/token", sos.GetUserIdHandler)
-	handler.HandleFunc("/userid", sos.GetUserTokenHandler)
+	handler.HandleFunc("/getUserToken", sos.GetUserIdHandler)
+	handler.HandleFunc("/getUserId", sos.GetUserTokenHandler)
 
 
 	// Настройка CORS
