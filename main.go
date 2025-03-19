@@ -3,6 +3,7 @@ package main
 import (
 	"Diploma/config"
 	"Diploma/controller"
+	sos "Diploma/controller/sos"
 	authentication2 "Diploma/controller/authentication"
 	"Diploma/users"
 	"fmt"
@@ -29,6 +30,8 @@ func main() {
 		&users.User{},
 		&users.TrustedContact{},
 		&users.LiveLocation{},
+		&users.Notification{},
+		&users.SOSSignal{},
 		&users.GoogleUser{}); err != nil {
 		log.Fatalf("Ошибка миграции БД: %v", err)
 	}
@@ -61,7 +64,12 @@ func main() {
 	handler.HandleFunc("/contacts", controller.GetEmergencyContacts)          // Получение всех контактов
 	handler.HandleFunc("/contacts/delete", controller.DeleteEmergencyContact) // Удаление
 
-	handler.HandleFunc("/ws/location", controller.HandleLiveLocation)
+	handler.HandleFunc("/register-push-token", sos.RegisterPushTokenHandler)
+	handler.HandleFunc("/sos", sos.SendSOSHandler)
+
+	handler.HandleFunc("/token", sos.GetUserIdHandler)
+	handler.HandleFunc("/userid", sos.GetUserTokenHandler)
+
 
 	// Настройка CORS
 	corsHandler := cors.New(cors.Options{

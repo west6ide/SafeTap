@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -48,7 +47,7 @@ func AddEmergencyContact(w http.ResponseWriter, r *http.Request) {
 	trustedContact := users.TrustedContact{
 		UserID:      user.ID,
 		PhoneNumber: contactRequest.PhoneNumber,
-		ContactID:   strconv.Itoa(int(contactUser.ID)), // Записываем ID найденного пользователя
+		ContactID:   contactUser.ID, // Записываем ID найденного пользователя
 		CreatedAt:   time.Now(),
 	}
 
