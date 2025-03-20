@@ -3,14 +3,9 @@ package controller
 import (
 	"Diploma/config"
 	"Diploma/users"
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"net/http"
-	"os"
-	"time"
 )
 
 // Обработчик регистрации Push Token
@@ -25,44 +20,47 @@ func RegisterPushTokenHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// Обработчик отправки SOS-сигнала
-func SendSOSHandler(w http.ResponseWriter, r *http.Request) {
-	var sos users.SOSSignal
-	json.NewDecoder(r.Body).Decode(&sos)
-	sos.CreatedAt = time.Now()
-	config.DB.Create(&sos)
+func SendSOS(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+		return
+	}
 
+	var input struct {
+		UserID    uint    `json:"UserID"`
+		Latitude  float64 `json:"Latitude"`
+		Longitude float64 `json:"Longitude"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		http.Error(w, "Неверный формат запроса", http.StatusBadRequest)
+		return
+	}
+
+	// Сохранение SOS-сигнала
+	sosSignal := users.SOSSignal{
+		UserID:    input.UserID,
+		Latitude:  input.Latitude,
+		Longitude: input.Longitude,
+	}
+	config.DB.Create(&sosSignal)
+
+	// Найдём контакты пользователя
 	var contacts []users.TrustedContact
-	config.DB.Where("user_id = ?", sos.UserID).Find(&contacts)
+	config.DB.Where("user_id = ?", input.UserID).Find(&contacts)
 
+	// Создаём уведомления для контактов
 	for _, contact := range contacts {
-		if contact.PushToken != "" {
-			message := fmt.Sprintf("SOS! Ваш контакт в опасности. Координаты: %.6f, %.6f", sos.Latitude, sos.Longitude)
-			go sendPushNotification(contact.PushToken, message)
+		notification := users.Notification{
+			UserID:    input.UserID,
+			ContactID: contact.ContactID,
+			Message:   "ВНИМАНИЕ! Ваш контакт отправил SOS-сигнал!",
 		}
+		config.DB.Create(&notification)
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-}
-
-// Функция отправки push-уведомлений через Firebase
-func sendPushNotification(token, message string) {
-	fcmKey := os.Getenv("FCM_SERVER_KEY")
-	payload := map[string]interface{}{
-		"to": token,
-		"notification": map[string]string{
-			"title": "SOS Сигнал!",
-			"body": message,
-		},
-	}
-	jsonPayload, _ := json.Marshal(payload)
-	req, _ := http.NewRequest("POST", "https://fcm.googleapis.com/fcm/send", bytes.NewBuffer(jsonPayload))
-	req.Header.Set("Authorization", "key="+fcmKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, _ := client.Do(req)
-	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
-	log.Println("Ответ Firebase:", string(body))
+	fmt.Fprintln(w, `{"message": "SOS-сигнал отправлен успешно"}`)
 }

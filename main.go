@@ -64,7 +64,8 @@ func main() {
 	handler.HandleFunc("/contacts/delete", controller.DeleteEmergencyContact) // Удаление
 
 	handler.HandleFunc("/register-push-token", controller.RegisterPushTokenHandler)
-	handler.HandleFunc("/sos", controller.SendSOSHandler)
+	http.HandleFunc("/sos", controller.SendSOS)
+	http.HandleFunc("/notifications", controller.GetNotifications)
 	handler.HandleFunc("/getUserId", authentication2.GetUserIdHandler)
 
 
