@@ -28,7 +28,7 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		user_id    uint    `json:"user_id"`
+		UserID    uint    `json:"user_id"`  // ✅ Принимаем user_id с маленькой буквы
 		Latitude  float64 `json:"Latitude"`
 		Longitude float64 `json:"Longitude"`
 	}
@@ -41,21 +41,25 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 
 	// Сохранение SOS-сигнала
 	sosSignal := users.SOSSignal{
-		UserID:    input.user_id,
+		UserID:    input.UserID,
 		Latitude:  input.Latitude,
 		Longitude: input.Longitude,
 		CreatedAt: time.Now(),
 	}
-	config.DB.Create(&sosSignal)
+	result := config.DB.Create(&sosSignal)
+	if result.Error != nil {
+		http.Error(w, fmt.Sprintf("Ошибка сохранения в базу данных: %v", result.Error), http.StatusInternalServerError)
+		return
+	}
 
 	// Найдём контакты пользователя
 	var contacts []users.TrustedContact
-	config.DB.Where("user_id = ?", input.user_id).Find(&contacts)
+	config.DB.Where("user_id = ?", input.UserID).Find(&contacts)
 
 	// Создаём уведомления для контактов
 	for _, contact := range contacts {
 		notification := users.Notification{
-			UserID:    input.user_id,
+			UserID:    input.UserID,
 			ContactID: contact.ContactID,
 			Message:   "ВНИМАНИЕ! Ваш контакт отправил SOS-сигнал!",
 			CreatedAt: time.Now(),
