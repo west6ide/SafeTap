@@ -12,12 +12,12 @@ import (
 // Обработчик регистрации Push Token
 func RegisterPushTokenHandler(w http.ResponseWriter, r *http.Request) {
 	var request struct {
-		user_id    uint   `json:"user_id"`
+		UserID    uint   `json:"user_id"`
 		PushToken string `json:"push_token"`
 	}
 	json.NewDecoder(r.Body).Decode(&request)
 
-	config.DB.Model(&users.User{}).Where("id = ?", request.user_id).Update("push_token", request.PushToken)
+	config.DB.Model(&users.User{}).Where("id = ?", request.UserID).Update("push_token", request.PushToken)
 	w.WriteHeader(http.StatusOK)
 }
 
