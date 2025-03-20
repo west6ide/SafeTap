@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 // Обработчик регистрации Push Token
@@ -27,7 +28,7 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		UserID    uint    `json:"UserID"`
+		UserID    uint    `json:"user_id"`
 		Latitude  float64 `json:"Latitude"`
 		Longitude float64 `json:"Longitude"`
 	}
@@ -43,6 +44,7 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 		UserID:    input.UserID,
 		Latitude:  input.Latitude,
 		Longitude: input.Longitude,
+		CreatedAt: time.Now(),
 	}
 	config.DB.Create(&sosSignal)
 
@@ -56,6 +58,7 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 			UserID:    input.UserID,
 			ContactID: contact.ContactID,
 			Message:   "ВНИМАНИЕ! Ваш контакт отправил SOS-сигнал!",
+			CreatedAt: time.Now(),
 		}
 		config.DB.Create(&notification)
 	}
