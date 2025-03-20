@@ -28,24 +28,28 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		UserID    uint    `json:"user_id"`  // ✅ Принимаем user_id с маленькой буквы
+		UserID    uint    `json:"user_id"`  // ✅ Исправление на user_id с маленькой буквы
 		Latitude  float64 `json:"Latitude"`
 		Longitude float64 `json:"Longitude"`
 	}
 
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
-		http.Error(w, "Неверный формат запроса", http.StatusBadRequest)
+		http.Error(w, "Неверный формат запроса: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Сохранение SOS-сигнала
+	// ✅ Логирование полученных данных
+	fmt.Printf("Получены данные: UserID = %d, Latitude = %f, Longitude = %f\n", input.UserID, input.Latitude, input.Longitude)
+
+	// Сохранение SOS-сигнала в базу данных
 	sosSignal := users.SOSSignal{
 		UserID:    input.UserID,
 		Latitude:  input.Latitude,
 		Longitude: input.Longitude,
 		CreatedAt: time.Now(),
 	}
+
 	result := config.DB.Create(&sosSignal)
 	if result.Error != nil {
 		http.Error(w, fmt.Sprintf("Ошибка сохранения в базу данных: %v", result.Error), http.StatusInternalServerError)

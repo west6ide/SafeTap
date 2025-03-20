@@ -41,10 +41,10 @@ type LiveLocation struct {
 // Модель SOS-сигнала
 type SOSSignal struct {
 	ID        uint      `gorm:"primaryKey"`
-	UserID    uint      `gorm:"not null" json:"user_id"`
-	Latitude  float64   `gorm:"not null"`
-	Longitude float64   `gorm:"not null"`
-	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UserID    uint
+	Latitude  float64
+	Longitude float64
+	CreatedAt time.Time
 }
 
 // Модель уведомления
