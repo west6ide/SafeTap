@@ -12,12 +12,12 @@ import (
 // Обработчик регистрации Push Token
 func RegisterPushTokenHandler(w http.ResponseWriter, r *http.Request) {
 	var request struct {
-		UserID    uint   `json:"user_id"`
+		user_id    uint   `json:"user_id"`
 		PushToken string `json:"push_token"`
 	}
 	json.NewDecoder(r.Body).Decode(&request)
 
-	config.DB.Model(&users.User{}).Where("id = ?", request.UserID).Update("push_token", request.PushToken)
+	config.DB.Model(&users.User{}).Where("id = ?", request.user_id).Update("push_token", request.PushToken)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -28,7 +28,7 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		UserID    uint    `json:"user_id"`
+		user_id    uint    `json:"user_id"`
 		Latitude  float64 `json:"Latitude"`
 		Longitude float64 `json:"Longitude"`
 	}
@@ -41,7 +41,7 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 
 	// Сохранение SOS-сигнала
 	sosSignal := users.SOSSignal{
-		UserID:    input.UserID,
+		UserID:    input.user_id,
 		Latitude:  input.Latitude,
 		Longitude: input.Longitude,
 		CreatedAt: time.Now(),
@@ -50,12 +50,12 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 
 	// Найдём контакты пользователя
 	var contacts []users.TrustedContact
-	config.DB.Where("user_id = ?", input.UserID).Find(&contacts)
+	config.DB.Where("user_id = ?", input.user_id).Find(&contacts)
 
 	// Создаём уведомления для контактов
 	for _, contact := range contacts {
 		notification := users.Notification{
-			UserID:    input.UserID,
+			UserID:    input.user_id,
 			ContactID: contact.ContactID,
 			Message:   "ВНИМАНИЕ! Ваш контакт отправил SOS-сигнал!",
 			CreatedAt: time.Now(),

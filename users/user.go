@@ -33,7 +33,7 @@ type TrustedContact struct {
 
 type LiveLocation struct {
 	ID        uint      `gorm:"primaryKey"`
-	UserID    uint      `gorm:"index"` // ID пользователя
+	UserID    uint      `gorm:"index" json:"user_id"` // ID пользователя
 	Lat       float64   `json:"lat"`
 	Lng       float64   `json:"lng"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -41,7 +41,7 @@ type LiveLocation struct {
 // Модель SOS-сигнала
 type SOSSignal struct {
 	ID        uint      `gorm:"primaryKey"`
-	UserID    uint      `gorm:"not null"`
+	UserID    uint      `gorm:"not null" json:"user_id"`
 	Latitude  float64   `gorm:"not null"`
 	Longitude float64   `gorm:"not null"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
@@ -50,7 +50,7 @@ type SOSSignal struct {
 // Модель уведомления
 type Notification struct {
 	ID        uint      `gorm:"primaryKey"`
-	UserID    uint      `gorm:"not null"`
+	UserID    uint      `gorm:"not null" json:"user_id"`
 	ContactID uint      `gorm:"not null"`
 	Message   string    `gorm:"not null"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
