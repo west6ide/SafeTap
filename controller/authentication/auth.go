@@ -18,7 +18,7 @@ var JwtKey = []byte(os.Getenv("JWT_SECRET"))
 
 type Claims struct {
 	Phone  string `json:"phone"`
-	UserID uint   `json:"user_id"`
+	UserID uint   `json:"UserID"`
 	jwt.RegisteredClaims
 }
 
@@ -269,7 +269,7 @@ func GetUserIdHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := claims["user_id"].(float64)
+	userID, ok := claims["UserID"].(float64)
 	if !ok {
 		http.Error(w, "Invalid token payload", http.StatusUnauthorized)
 		return
@@ -282,7 +282,7 @@ func GetUserIdHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := map[string]interface{}{
-		"user_id": user.ID,
+		"UserID": user.ID,
 		"name":    user.Name,
 		"email":   user.Email,
 	}
