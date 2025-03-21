@@ -13,7 +13,7 @@ import (
 // Обработчик регистрации Push Token
 func RegisterPushTokenHandler(w http.ResponseWriter, r *http.Request) {
 	var request struct {
-		UserID    uint   `json:"user_id"`
+		UserID    uint   `json:"UserID"`
 		PushToken string `json:"push_token"`
 	}
 	json.NewDecoder(r.Body).Decode(&request)
@@ -56,7 +56,7 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var contacts []users.TrustedContact
-	config.DB.Where("user_id = ?", input.UserID).Find(&contacts)
+	config.DB.Where("UserID = ?", input.UserID).Find(&contacts)
 
 	for _, contact := range contacts {
 		notification := users.Notification{
