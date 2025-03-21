@@ -4,7 +4,6 @@ import (
 	"Diploma/config"
 	"Diploma/users"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 )
@@ -44,27 +43,22 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Логируем полученные данные
-    fmt.Printf("SOS Signal received from UserID: %d, Latitude: %f, Longitude: %f\n", input.UserID, input.Latitude, input.Longitude)
-
-    // Сохранение SOS-сигнала
     sosSignal := users.SOSSignal{
         UserID:    input.UserID,
         Latitude:  input.Latitude,
         Longitude: input.Longitude,
         CreatedAt: time.Now(),
     }
+
     if result := config.DB.Create(&sosSignal); result.Error != nil {
-        fmt.Println("Ошибка при сохранении SOS-сигнала:", result.Error)
-        http.Error(w, "Ошибка при сохранении SOS-сигнала", http.StatusInternalServerError)
+        http.Error(w, "Ошибка сохранения сигнала SOS", http.StatusInternalServerError)
         return
     }
 
-    // Найдём контакты пользователя
     var contacts []users.TrustedContact
     config.DB.Where("UserID = ?", input.UserID).Find(&contacts)
 
-    // Создаём уведомления для контактов
+    notifications := []users.Notification{}
     for _, contact := range contacts {
         notification := users.Notification{
             UserID:    input.UserID,
@@ -73,9 +67,11 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
             CreatedAt: time.Now(),
         }
         config.DB.Create(&notification)
+        notifications = append(notifications, notification)
     }
 
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusOK)
-    fmt.Fprintln(w, `{"message": "SOS-сигнал отправлен успешно"}`)
+    json.NewEncoder(w).Encode(map[string]string{"message": "SOS-сигнал отправлен успешно"})
 }
+
