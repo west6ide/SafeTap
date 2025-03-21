@@ -41,6 +41,7 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("Получен SOS-запрос: UserID=%d, Latitude=%.6f, Longitude=%.6f", input.UserID, input.Latitude, input.Longitude)
+	log.Printf("Запрос в формате JSON: %v", input)
 
 	sosSignal := users.SOSSignal{
 		UserID:    input.UserID,
@@ -73,4 +74,3 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, `{"message": "SOS-сигнал отправлен успешно"}`)
 }
-
