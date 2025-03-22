@@ -8,7 +8,7 @@ import (
 )
 
 func GetNotifications(w http.ResponseWriter, r *http.Request) {
-    userID := r.URL.Query().Get("UserID")
+    userID := r.URL.Query().Get("user_id") // ❗ Здесь должно быть "user_id" в нижнем регистре.
     if userID == "" {
         http.Error(w, "User ID не передан", http.StatusBadRequest)
         return
@@ -22,6 +22,8 @@ func GetNotifications(w http.ResponseWriter, r *http.Request) {
     }
 
     w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
     json.NewEncoder(w).Encode(notifications)
 }
+
 
