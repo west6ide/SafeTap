@@ -26,6 +26,13 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    // Проверка Bearer токена
+    token := r.Header.Get("Authorization")
+    if token == "" {
+        http.Error(w, "Токен отсутствует", http.StatusUnauthorized)
+        return
+    }
+
     var input struct {
         UserID    uint    `json:"UserID"`
         Latitude  float64 `json:"Latitude"`
@@ -49,7 +56,6 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
         Longitude: input.Longitude,
         CreatedAt: time.Now(),
     }
-
     if result := config.DB.Create(&sosSignal); result.Error != nil {
         http.Error(w, "Ошибка сохранения сигнала SOS", http.StatusInternalServerError)
         return
@@ -58,7 +64,6 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
     var contacts []users.TrustedContact
     config.DB.Where("UserID = ?", input.UserID).Find(&contacts)
 
-    notifications := []users.Notification{}
     for _, contact := range contacts {
         notification := users.Notification{
             UserID:    input.UserID,
@@ -67,11 +72,8 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
             CreatedAt: time.Now(),
         }
         config.DB.Create(&notification)
-        notifications = append(notifications, notification)
     }
 
     w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusOK)
     json.NewEncoder(w).Encode(map[string]string{"message": "SOS-сигнал отправлен успешно"})
 }
-
