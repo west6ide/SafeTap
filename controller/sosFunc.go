@@ -12,7 +12,7 @@ import (
 // Обработчик регистрации Push Token
 func RegisterPushTokenHandler(w http.ResponseWriter, r *http.Request) {
 	var request struct {
-		UserID    uint   `json:"UserID"`
+		UserID    uint   `json:"user_id"`
 		PushToken string `json:"push_token"`
 	}
 	json.NewDecoder(r.Body).Decode(&request)
@@ -39,8 +39,8 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if input.Latitude == 0 && input.Longitude == 0 {
-		http.Error(w, "Координаты не получены!", http.StatusBadRequest)
+	if input.Latitude == 0.0 && input.Longitude == 0.0 {
+		http.Error(w, "Координаты не получены", http.StatusBadRequest)
 		return
 	}
 
@@ -59,7 +59,7 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 
 	// Найдём контакты пользователя
 	var contacts []users.TrustedContact
-	config.DB.Where("UserID = ?", input.UserID).Find(&contacts)
+	config.DB.Where("user_id = ?", input.UserID).Find(&contacts)
 
 	// Создаём уведомления для контактов
 	for _, contact := range contacts {
