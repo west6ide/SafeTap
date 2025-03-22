@@ -39,6 +39,11 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if input.Latitude == 0 && input.Longitude == 0 {
+		http.Error(w, "Координаты не получены!", http.StatusBadRequest)
+		return
+	}
+
 	// Сохранение SOS-сигнала
 	sosSignal := users.SOSSignal{
 		UserID:    input.UserID,
