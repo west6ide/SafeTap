@@ -37,7 +37,7 @@ func AddEmergencyContact(w http.ResponseWriter, r *http.Request) {
 
 	// Проверяем, не добавлен ли уже этот контакт
 	existingContact := users.TrustedContact{}
-	if err := config.DB.Where("UserID = ? AND phone_number = ?", user.ID, contactRequest.PhoneNumber).
+	if err := config.DB.Where("user_id = ? AND phone_number = ?", user.ID, contactRequest.PhoneNumber).
 		First(&existingContact).Error; err == nil {
 		http.Error(w, "Contact already exists", http.StatusConflict)
 		return
@@ -69,7 +69,7 @@ func GetEmergencyContacts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var contacts []users.TrustedContact
-	if err := config.DB.Where("UserID = ?", user.ID).Find(&contacts).Error; err != nil {
+	if err := config.DB.Where("user_id = ?", user.ID).Find(&contacts).Error; err != nil {
 		http.Error(w, "Error retrieving contacts", http.StatusInternalServerError)
 		return
 	}
@@ -96,7 +96,7 @@ func DeleteEmergencyContact(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var contact users.TrustedContact
-	if err := config.DB.Where("UserID = ? AND phone_number = ?", user.ID, contactRequest.PhoneNumber).First(&contact).Error; err != nil {
+	if err := config.DB.Where("user_id = ? AND phone_number = ?", user.ID, contactRequest.PhoneNumber).First(&contact).Error; err != nil {
 		http.Error(w, "Contact not found", http.StatusNotFound)
 		return
 	}
