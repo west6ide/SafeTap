@@ -5,6 +5,7 @@ import (
 	"Diploma/users"
 	"encoding/json"
 	"net/http"
+	"fmt"
 )
 
 func GetNotifications(w http.ResponseWriter, r *http.Request) {
@@ -14,8 +15,20 @@ func GetNotifications(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    userID := r.URL.Query().Get("user_id")
+    if userID == "" {
+        http.Error(w, "User ID не передан", http.StatusBadRequest)
+        return
+    }
+
+    // Проверка, что текущий пользователь имеет право получать уведомления этого user_id
+    if fmt.Sprint(user.ID) != userID {
+        http.Error(w, "Access denied: You are not allowed to view these notifications", http.StatusForbidden)
+        return
+    }
+
     var notifications []users.Notification
-    result := config.DB.Where("contact_id = ?", user.ID).Find(&notifications)
+    result := config.DB.Where("contact_id = ?", userID).Find(&notifications)
     if result.Error != nil {
         http.Error(w, "Ошибка получения уведомлений", http.StatusInternalServerError)
         return
@@ -25,6 +38,8 @@ func GetNotifications(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusOK)
     json.NewEncoder(w).Encode(notifications)
 }
+
+
 
 
 

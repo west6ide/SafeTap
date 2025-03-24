@@ -251,41 +251,36 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 
 
 func GetUserIdHandler(w http.ResponseWriter, r *http.Request) {
-	tokenString := r.Header.Get("Authorization")
-	if tokenString == "" {
-		http.Error(w, "Missing token", http.StatusUnauthorized)
-		return
-	}
+    tokenString := r.Header.Get("Authorization")
+    if tokenString == "" {
+        http.Error(w, "Missing token", http.StatusUnauthorized)
+        return
+    }
 
-	tokenString = strings.Replace(tokenString, "Bearer ", "", 1)
+    tokenString = strings.Replace(tokenString, "Bearer ", "", 1)
 
-	claims := jwt.MapClaims{}
-	token, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(config.GetJWTSecret()), nil // ✅ Теперь функция существует
-	})
+    claims := &Claims{}
+    token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+        return []byte(config.GetJWTSecret()), nil
+    })
 
-	if err != nil || !token.Valid {
-		http.Error(w, "Invalid token", http.StatusUnauthorized)
-		return
-	}
+    if err != nil || !token.Valid {
+        http.Error(w, "Invalid token", http.StatusUnauthorized)
+        return
+    }
 
-	userID, ok := claims["user_id"].(float64)
-	if !ok {
-		http.Error(w, "Invalid token payload", http.StatusUnauthorized)
-		return
-	}
+    var user users.User
+    if err := config.DB.First(&user, claims.UserID).Error; err != nil {
+        http.Error(w, "User not found", http.StatusNotFound)
+        return
+    }
 
-	var user users.User
-	if err := config.DB.First(&user, uint(userID)).Error; err != nil {
-		http.Error(w, "User not found", http.StatusNotFound)
-		return
-	}
-
-	response := map[string]interface{}{
-		"user_id": user.ID,
-		"name":    user.Name,
-		"email":   user.Email,
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+    response := map[string]interface{}{
+        "user_id": user.ID,
+        "name":    user.Name,
+        "phone":   user.Phone,
+    }
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(response)
 }
+
