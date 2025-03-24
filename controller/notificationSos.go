@@ -28,7 +28,7 @@ func GetNotifications(w http.ResponseWriter, r *http.Request) {
     }
 
     var notifications []users.Notification
-    result := config.DB.Where("contact_id = ?", userID).Find(&notifications)
+    result := config.DB.Where("user_id = ?", userID).Find(&notifications)
     if result.Error != nil {
         http.Error(w, "Ошибка получения уведомлений", http.StatusInternalServerError)
         return
