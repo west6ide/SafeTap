@@ -31,6 +31,7 @@ type TrustedContact struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+
 type LiveLocation struct {
 	ID        uint      `gorm:"primaryKey"`
 	UserID    uint      `gorm:"index" json:"user_id"` // ID пользователя

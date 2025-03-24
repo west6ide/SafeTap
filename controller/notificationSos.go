@@ -8,14 +8,14 @@ import (
 )
 
 func GetNotifications(w http.ResponseWriter, r *http.Request) {
-    userID := r.URL.Query().Get("user_id") // ❗ Здесь должно быть "user_id" в нижнем регистре.
-    if userID == "" {
-        http.Error(w, "User ID не передан", http.StatusBadRequest)
+    user, err := authenticateUser(r)
+    if err != nil {
+        http.Error(w, "Unauthorized", http.StatusUnauthorized)
         return
     }
 
     var notifications []users.Notification
-    result := config.DB.Where("contact_id = ?", userID).Find(&notifications)
+    result := config.DB.Where("contact_id = ?", user.ID).Find(&notifications)
     if result.Error != nil {
         http.Error(w, "Ошибка получения уведомлений", http.StatusInternalServerError)
         return
@@ -25,5 +25,6 @@ func GetNotifications(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusOK)
     json.NewEncoder(w).Encode(notifications)
 }
+
 
 
