@@ -28,7 +28,7 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var input struct {
-		UserID    uint    `json:"UserID"`
+		UserID    uint    `json:"user_id"`
 		Latitude  float64 `json:"Latitude"`
 		Longitude float64 `json:"Longitude"`
 	}
