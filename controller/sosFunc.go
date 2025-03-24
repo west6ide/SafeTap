@@ -4,20 +4,14 @@ import (
 	"Diploma/config"
 	"Diploma/users"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 )
 
-// Обработчик регистрации Push Token
-func RegisterPushTokenHandler(w http.ResponseWriter, r *http.Request) {
-	var request struct {
-		UserID    uint   `json:"user_id"`
-		PushToken string `json:"push_token"`
-	}
-	json.NewDecoder(r.Body).Decode(&request)
-
-	config.DB.Model(&users.User{}).Where("id = ?", request.UserID).Update("push_token", request.PushToken)
-	w.WriteHeader(http.StatusOK)
+type SOSRequest struct {
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
 }
 
 func SendSOS(w http.ResponseWriter, r *http.Request) {
@@ -27,30 +21,45 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var sosRequest struct {
-		UserID    uint    `json:"user_id"`
-		Latitude  float64 `json:"Latitude"`
-		Longitude float64 `json:"Longitude"`
-	}
-
+	var sosRequest SOSRequest
 	if err := json.NewDecoder(r.Body).Decode(&sosRequest); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
 
-	sosSignal := users.SOSSignal{
-		UserID:    user.ID,
-		Latitude:  sosRequest.Latitude,
-		Longitude: sosRequest.Longitude,
-		CreatedAt: time.Now(),
-	}
-
-	if err := config.DB.Create(&sosSignal).Error; err != nil {
-		http.Error(w, "Failed to save SOS signal", http.StatusInternalServerError)
+	var contacts []users.TrustedContact
+	if err := config.DB.Where("user_id = ?", user.ID).Find(&contacts).Error; err != nil {
+		http.Error(w, "Failed to retrieve contacts", http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("SOS signal saved successfully"))
+	for _, contact := range contacts {
+		signal := users.SOSSignal{
+			UserID:    user.ID,
+			ContactID: contact.ContactID,
+			Latitude:  sosRequest.Latitude,
+			Longitude: sosRequest.Longitude,
+			CreatedAt: time.Now(),
+		}
+
+		if err := config.DB.Create(&signal).Error; err != nil {
+			http.Error(w, "Failed to save SOS signal", http.StatusInternalServerError)
+			return
+		}
+
+		notification := users.Notification{
+			UserID:    contact.ContactID,
+			ContactID: user.ID,
+			Message:   fmt.Sprintf("SOS received from user %d", user.ID),
+			CreatedAt: time.Now(),
+		}
+
+		if err := config.DB.Create(&notification).Error; err != nil {
+			http.Error(w, "Failed to save notification", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("SOS signal sent successfully!"))
 }
-
