@@ -14,7 +14,9 @@ type SOSRequest struct {
 	Longitude float64 `json:"longitude"`
 }
 
+// Отправка SOS
 func SendSOS(w http.ResponseWriter, r *http.Request) {
+	// Проверка авторизации
 	user, err := authenticateUser(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -23,17 +25,20 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 
 	var sosRequest SOSRequest
 	if err := json.NewDecoder(r.Body).Decode(&sosRequest); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	// Получение всех экстренных контактов пользователя
 	var contacts []users.TrustedContact
 	if err := config.DB.Where("user_id = ?", user.ID).Find(&contacts).Error; err != nil {
 		http.Error(w, "Failed to retrieve contacts", http.StatusInternalServerError)
 		return
 	}
 
+	// Сохранение SOS сигнала для каждого контакта
 	for _, contact := range contacts {
+		// Сохранение SOS сигнала
 		signal := users.SOSSignal{
 			UserID:    user.ID,
 			ContactID: contact.ContactID,
@@ -47,10 +52,11 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Сохранение уведомления
 		notification := users.Notification{
 			UserID:    contact.ContactID,
 			ContactID: user.ID,
-			Message:   fmt.Sprintf("SOS received from user %d", user.ID),
+			Message:   fmt.Sprintf("SOS сигнал от пользователя %d", user.ID),
 			CreatedAt: time.Now(),
 		}
 
@@ -61,5 +67,5 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("SOS signal sent successfully!"))
+	w.Write([]byte("SOS сигнал успешно отправлен!"))
 }
