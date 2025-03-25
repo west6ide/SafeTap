@@ -2,6 +2,7 @@ package controller
 
 import (
 	"Diploma/config"
+	"Diploma/controller/authentication"
 	"Diploma/users"
 	"encoding/json"
 	"fmt"
