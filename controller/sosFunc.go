@@ -21,21 +21,26 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var sosRequest SOSRequest
+	var sosRequest struct {
+		Latitude  float64 `json:"latitude"`
+		Longitude float64 `json:"longitude"`
+	}
+
 	if err := json.NewDecoder(r.Body).Decode(&sosRequest); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	// Получаем список экстренных контактов для данного пользователя
-	var contacts []users.TrustedContact
-	if err := config.DB.Where("user_id = ?", user.ID).Find(&contacts).Error; err != nil {
-		http.Error(w, "Failed to retrieve contacts", http.StatusInternalServerError)
+	// Fetch emergency contacts
+	var trustedContacts []users.TrustedContact
+	if err := config.DB.Where("user_id = ?", user.ID).Find(&trustedContacts).Error; err != nil {
+		http.Error(w, "Error fetching emergency contacts", http.StatusInternalServerError)
 		return
 	}
 
-	for _, contact := range contacts {
-		// Сохранение SOS сигнала
+	// Save SOS signals and create notifications for each contact
+	for _, contact := range trustedContacts {
+		// Save SOS signal
 		sosSignal := users.SOSSignal{
 			UserID:    user.ID,
 			ContactID: contact.ContactID,
@@ -45,24 +50,24 @@ func SendSOS(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := config.DB.Create(&sosSignal).Error; err != nil {
-			http.Error(w, "Failed to save SOS signal", http.StatusInternalServerError)
+			http.Error(w, "Error saving SOS signal", http.StatusInternalServerError)
 			return
 		}
 
-		// Сохранение уведомления (меняем местами UserID и ContactID)
+		// Save Notification
 		notification := users.Notification{
 			UserID:    contact.ContactID,
 			ContactID: user.ID,
-			Message:   fmt.Sprintf("Получен SOS сигнал от пользователя %d", user.ID),
+			Message:   "SOS signal received!",
 			CreatedAt: time.Now(),
 		}
 
 		if err := config.DB.Create(&notification).Error; err != nil {
-			http.Error(w, "Failed to save notification", http.StatusInternalServerError)
+			http.Error(w, "Error saving notification", http.StatusInternalServerError)
 			return
 		}
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("SOS сигнал успешно отправлен всем контактам!"))
+	fmt.Fprint(w, "SOS signals sent successfully!")
 }

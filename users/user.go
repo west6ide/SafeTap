@@ -39,7 +39,7 @@ type LiveLocation struct {
 	Lng       float64   `json:"lng"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
-// Модель SOS-сигнала
+
 type SOSSignal struct {
 	ID        uint      `gorm:"primaryKey"`
 	UserID    uint      `gorm:"index" json:"user_id"`
@@ -48,6 +48,7 @@ type SOSSignal struct {
 	Longitude float64   `json:"longitude"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
 
 // Модель уведомления
 type Notification struct {
