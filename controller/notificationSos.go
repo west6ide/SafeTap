@@ -9,7 +9,7 @@ import (
 )
 
 func GetNotifications(w http.ResponseWriter, r *http.Request) {
-    user, err := authenticateUser(r)
+    user, err := AuthenticateUser(r)
     if err != nil {
         http.Error(w, "Unauthorized", http.StatusUnauthorized)
         return

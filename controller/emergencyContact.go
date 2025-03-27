@@ -13,7 +13,7 @@ import (
 
 // 📌 Добавление экстренного контакта (Create)
 func AddEmergencyContact(w http.ResponseWriter, r *http.Request) {
-	user, err := authenticateUser(r)
+	user, err := AuthenticateUser(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
@@ -62,7 +62,7 @@ func AddEmergencyContact(w http.ResponseWriter, r *http.Request) {
 
 // 📌 Получение всех экстренных контактов пользователя (Read)
 func GetEmergencyContacts(w http.ResponseWriter, r *http.Request) {
-	user, err := authenticateUser(r)
+	user, err := AuthenticateUser(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
@@ -80,7 +80,7 @@ func GetEmergencyContacts(w http.ResponseWriter, r *http.Request) {
 
 // 📌 Удаление экстренного контакта (Delete)
 func DeleteEmergencyContact(w http.ResponseWriter, r *http.Request) {
-	user, err := authenticateUser(r)
+	user, err := AuthenticateUser(r)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
@@ -111,7 +111,7 @@ func DeleteEmergencyContact(w http.ResponseWriter, r *http.Request) {
 }
 
 // 📌 Функция для проверки аутентификации пользователя
-func authenticateUser(r *http.Request) (*users.User, error) {
+func AuthenticateUser(r *http.Request) (*users.User, error) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return nil, fmt.Errorf("missing authorization header")
