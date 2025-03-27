@@ -63,8 +63,8 @@ func main() {
 	handler.HandleFunc("/contacts", controller.GetEmergencyContacts)          // Получение всех контактов
 	handler.HandleFunc("/contacts/delete", controller.DeleteEmergencyContact) // Удаление
 
-	http.HandleFunc("/sos", controller.SaveSOS)
-	http.HandleFunc("/notifications", controller.GetNotifications)
+	handler.HandleFunc("/sos", controller.SaveSOS)
+	handler.HandleFunc("/notifications", controller.GetNotifications)
 	handler.HandleFunc("/getUserId", authentication2.GetUserIdHandler)
 
 
