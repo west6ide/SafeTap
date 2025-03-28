@@ -5,41 +5,21 @@ import (
 	"Diploma/users"
 	"encoding/json"
 	"net/http"
-	"fmt"
 )
 
 func GetNotifications(w http.ResponseWriter, r *http.Request) {
-    user, err := AuthenticateUser(r)
-    if err != nil {
-        http.Error(w, "Unauthorized", http.StatusUnauthorized)
-        return
-    }
+	user, err := AuthenticateUser(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
-    userID := r.URL.Query().Get("user_id")
-    if userID == "" {
-        http.Error(w, "User ID не передан", http.StatusBadRequest)
-        return
-    }
+	var notifications []users.Notification
+	if err := config.DB.Where("user_id = ?", user.ID).Order("created_at DESC").Find(&notifications).Error; err != nil {
+		http.Error(w, "Failed to fetch notifications", http.StatusInternalServerError)
+		return
+	}
 
-    // Проверка, что текущий пользователь имеет право получать уведомления этого user_id
-    if fmt.Sprint(user.ID) != userID {
-        http.Error(w, "Access denied: You are not allowed to view these notifications", http.StatusForbidden)
-        return
-    }
-
-    var notifications []users.Notification
-    result := config.DB.Where("user_id = ?", userID).Find(&notifications)
-    if result.Error != nil {
-        http.Error(w, "Ошибка получения уведомлений", http.StatusInternalServerError)
-        return
-    }
-
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusOK)
-    json.NewEncoder(w).Encode(notifications)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(notifications)
 }
-
-
-
-
-

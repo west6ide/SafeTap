@@ -50,12 +50,14 @@ type SOSSignal struct {
 }
 
 
+
 type Notification struct {
-    ID        uint      `gorm:"primaryKey"`
-    UserID    uint      `gorm:"not null" json:"user_id"`
-    ContactID uint      `gorm:"not null" json:"contact_id"`
-    Message   string    `gorm:"not null"`
-    CreatedAt time.Time `gorm:"autoCreateTime"`
+	ID        uint      `gorm:"primaryKey"`
+	UserID    uint      `gorm:"index" json:"user_id"`        // User who receives the notification
+	ContactID uint      `gorm:"index" json:"contact_id"`     // User who sent the SOS signal
+	Message   string    `json:"message"`
+	CreatedAt time.Time `json:"created_at"`
 }
+
 
 
