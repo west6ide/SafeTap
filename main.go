@@ -23,6 +23,7 @@ func main() {
 	if err := config.InitDB(); err != nil {
 		log.Fatalf("Ошибка инициализации БД: %v", err)
 	}
+	controller.StartNotificationCleaner()
 
 	// Миграция базы данных
 	if err := config.DB.AutoMigrate(

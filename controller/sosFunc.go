@@ -60,8 +60,28 @@ func SaveSOS(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to save notification", http.StatusInternalServerError)
 			return
 		}
+		deleteNotificationAfterDelay(notification.ID, 30*time.Minute)
 	}
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, "SOS signal sent successfully!")
+}
+
+func deleteNotificationAfterDelay(notificationID uint, delay time.Duration) {
+	go func() {
+		time.Sleep(delay)
+		config.DB.Delete(&users.Notification{}, notificationID)
+	}()
+}
+
+func StartNotificationCleaner() {
+	go func() {
+		for {
+			// Delete notifications older than 30 minutes
+			expirationTime := time.Now().Add(-30 * time.Minute)
+			config.DB.Where("created_at < ?", expirationTime).Delete(&users.Notification{})
+
+			time.Sleep(5 * time.Minute) // Run cleanup every 5 minutes
+		}
+	}()
 }
