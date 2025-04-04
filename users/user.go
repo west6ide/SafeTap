@@ -32,13 +32,23 @@ type TrustedContact struct {
 }
 
 
+// type LiveLocation struct {
+// 	ID        uint      `json:"id" gorm:"primaryKey"`
+// 	UserID    uint      `json:"user_id"`
+// 	Latitude  float64   `json:"latitude"`
+// 	Longitude float64   `json:"longitude"`
+// 	UpdatedAt time.Time `json:"updated_at"`
+// }
+
 type LiveLocation struct {
-	ID        uint      `json:"id" gorm:"primaryKey"`
-	UserID    uint      `json:"user_id"`
-	Latitude  float64   `json:"latitude"`
-	Longitude float64   `json:"longitude"`
+	ID        uint    `json:"id"`
+	UserID    uint    `json:"user_id"`
+	Name      string  `json:"name"` // 👈 добавляем имя
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
 
 
 
