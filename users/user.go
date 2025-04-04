@@ -56,6 +56,8 @@ type Notification struct {
 	UserID    uint      `gorm:"index" json:"user_id"`        // User who receives the notification
 	ContactID uint      `gorm:"index" json:"contact_id"`     // User who sent the SOS signal
 	Message   string    `json:"message"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
 	CreatedAt time.Time `json:"created_at"`
 }
 

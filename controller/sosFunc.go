@@ -53,8 +53,11 @@ func SaveSOS(w http.ResponseWriter, r *http.Request) {
 			UserID:    contact.ContactID,
 			ContactID: user.ID,
 			Message:   fmt.Sprintf("Your trusted contact %s has sent an SOS signal!", user.Name),
+			Latitude:  sosRequest.Latitude,
+			Longitude: sosRequest.Longitude,
 			CreatedAt: time.Now(),
 		}
+		
 
 		if err := config.DB.Create(&notification).Error; err != nil {
 			http.Error(w, "Failed to save notification", http.StatusInternalServerError)
@@ -85,3 +88,4 @@ func StartNotificationCleaner() {
 		}
 	}()
 }
+
