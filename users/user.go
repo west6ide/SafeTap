@@ -34,11 +34,13 @@ type TrustedContact struct {
 
 type LiveLocation struct {
     ID        uint      `gorm:"primaryKey"`
-    UserID    uint
+    UserID    uint      `gorm:"index"`      // Чей это location
+    ContactID uint      `gorm:"index"`      // Кому доступен этот location
     Latitude  float64
     Longitude float64
     UpdatedAt time.Time
 }
+
 
 
 type SOSSignal struct {

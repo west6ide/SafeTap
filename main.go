@@ -69,7 +69,7 @@ func main() {
 	handler.HandleFunc("/getUserId", authentication2.GetUserIdHandler)
 
 	handler.HandleFunc("/location/update", controller.UpdateLiveLocation)
-	handler.HandleFunc("/location/emergency", controller.GetEmergencyLocations)
+	handler.HandleFunc("/location/emergency", controller.GetLiveLocations)
 
 
 
