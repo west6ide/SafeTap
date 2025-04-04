@@ -68,6 +68,12 @@ func main() {
 	handler.HandleFunc("/notifications", controller.GetNotifications)
 	handler.HandleFunc("/getUserId", authentication2.GetUserIdHandler)
 
+	handler.HandleFunc("/location/update", controller.UpdateLiveLocation)
+	handler.HandleFunc("/location/emergency", controller.GetEmergencyLocations)
+
+
+
+
 
 	// Настройка CORS
 	corsHandler := cors.New(cors.Options{
