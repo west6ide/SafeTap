@@ -34,8 +34,8 @@ type TrustedContact struct {
 
 type LiveLocation struct {
 	ID        uint      `json:"ID"`
-	UserID    int       `json:"UserID"`
-	ContactID int       `json:"ContactID"`
+	UserID    uint       `json:"UserID"`
+	ContactID uint       `json:"ContactID"`
 	Latitude  float64   `json:"Latitude"`
 	Longitude float64   `json:"Longitude"`
 	UpdatedAt time.Time `json:"UpdatedAt"`
