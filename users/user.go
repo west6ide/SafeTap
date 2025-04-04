@@ -33,13 +33,13 @@ type TrustedContact struct {
 
 
 type LiveLocation struct {
-	ID        uint      `json:"ID"`
-	UserID    uint       `json:"UserID"`
-	ContactID uint       `json:"ContactID"`
-	Latitude  float64   `json:"Latitude"`
-	Longitude float64   `json:"Longitude"`
-	UpdatedAt time.Time `json:"UpdatedAt"`
+	ID        uint      `json:"id" gorm:"primaryKey"`
+	UserID    uint      `json:"user_id"`
+	Latitude  float64   `json:"latitude"`
+	Longitude float64   `json:"longitude"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
+
 
 
 
