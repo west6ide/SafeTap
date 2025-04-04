@@ -1,4 +1,80 @@
-// controller/location.go
+// // controller/location.go
+// package controller
+
+// import (
+// 	"Diploma/config"
+// 	"Diploma/users"
+// 	"encoding/json"
+// 	"net/http"
+// )
+
+// func UpdateLiveLocation(w http.ResponseWriter, r *http.Request) {
+// 	user, err := AuthenticateUser(r)
+// 	if err != nil {
+// 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+// 		return
+// 	}
+
+// 	var req struct {
+// 		Latitude  float64 `json:"latitude"`
+// 		Longitude float64 `json:"longitude"`
+// 	}
+
+// 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+// 		http.Error(w, "Invalid request", http.StatusBadRequest)
+// 		return
+// 	}
+
+// 	var location users.LiveLocation
+// 	err = config.DB.Where("user_id = ?", user.ID).First(&location).Error
+// 	if err != nil {
+// 		location = users.LiveLocation{
+// 			UserID:   user.ID,
+// 			Latitude: req.Latitude,
+// 			Longitude: req.Longitude,
+// 		}
+// 		config.DB.Create(&location)
+// 	} else {
+// 		location.Latitude = req.Latitude
+// 		location.Longitude = req.Longitude
+// 		config.DB.Save(&location)
+// 	}
+
+// 	w.WriteHeader(http.StatusOK)
+// }
+
+
+// func GetEmergencyContactsLocations(w http.ResponseWriter, r *http.Request) {
+// 	user, err := AuthenticateUser(r)
+// 	if err != nil {
+// 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+// 		return
+// 	}
+
+// 	var contacts []users.TrustedContact
+// 	if err := config.DB.Where("user_id = ?", user.ID).Find(&contacts).Error; err != nil {
+// 		http.Error(w, "Database error", http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	var contactIDs []uint
+// 	for _, c := range contacts {
+// 		contactIDs = append(contactIDs, c.ContactID)
+// 	}
+
+// 	var locations []users.LiveLocation
+// 	if len(contactIDs) > 0 {
+// 		if err := config.DB.Where("user_id IN ?", contactIDs).Find(&locations).Error; err != nil {
+// 			http.Error(w, "Failed to retrieve locations", http.StatusInternalServerError)
+// 			return
+// 		}
+// 	}
+
+// 	w.Header().Set("Content-Type", "application/json")
+// 	json.NewEncoder(w).Encode(locations)
+// }
+
+
 package controller
 
 import (
@@ -6,6 +82,7 @@ import (
 	"Diploma/users"
 	"encoding/json"
 	"net/http"
+	"time"
 )
 
 func UpdateLiveLocation(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +120,6 @@ func UpdateLiveLocation(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-
 func GetEmergencyContactsLocations(w http.ResponseWriter, r *http.Request) {
 	user, err := AuthenticateUser(r)
 	if err != nil {
@@ -62,9 +138,24 @@ func GetEmergencyContactsLocations(w http.ResponseWriter, r *http.Request) {
 		contactIDs = append(contactIDs, c.ContactID)
 	}
 
-	var locations []users.LiveLocation
+	type LocationWithName struct {
+		ID        uint      `json:"id"`
+		UserID    uint      `json:"user_id"`
+		Latitude  float64   `json:"latitude"`
+		Longitude float64   `json:"longitude"`
+		UpdatedAt time.Time `json:"updated_at"`
+		Name      string    `json:"name"`
+	}
+
+	var locations []LocationWithName
 	if len(contactIDs) > 0 {
-		if err := config.DB.Where("user_id IN ?", contactIDs).Find(&locations).Error; err != nil {
+		if err := config.DB.Raw(`
+			SELECT l.*, u.name 
+			FROM live_locations l 
+			JOIN users u ON l.user_id = u.id 
+			WHERE l.user_id IN ?
+			ORDER BY l.updated_at DESC
+		`, contactIDs).Scan(&locations).Error; err != nil {
 			http.Error(w, "Failed to retrieve locations", http.StatusInternalServerError)
 			return
 		}
