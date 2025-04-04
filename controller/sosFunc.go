@@ -26,7 +26,11 @@ func SaveSOS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Retrieve all emergency contacts for this user
+	// ✅ Удаление старых SOS сигналов (вне цикла)
+	oneHourAgo := time.Now().Add(-1 * time.Hour)
+	config.DB.Where("created_at < ?", oneHourAgo).Delete(&users.SOSSignal{})
+
+	// Получаем контакты
 	var emergencyContacts []users.TrustedContact
 	if err := config.DB.Where("user_id = ?", user.ID).Find(&emergencyContacts).Error; err != nil {
 		http.Error(w, "Database error", http.StatusInternalServerError)
@@ -34,7 +38,7 @@ func SaveSOS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, contact := range emergencyContacts {
-		// Save the SOS Signal
+		// Сохраняем сигнал SOS
 		sosSignal := users.SOSSignal{
 			UserID:    user.ID,
 			ContactID: contact.ContactID,
@@ -48,7 +52,7 @@ func SaveSOS(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Create Notification for each contact
+		// Создаём уведомление
 		notification := users.Notification{
 			UserID:    contact.ContactID,
 			ContactID: user.ID,
@@ -57,18 +61,20 @@ func SaveSOS(w http.ResponseWriter, r *http.Request) {
 			Longitude: sosRequest.Longitude,
 			CreatedAt: time.Now(),
 		}
-		
 
 		if err := config.DB.Create(&notification).Error; err != nil {
 			http.Error(w, "Failed to save notification", http.StatusInternalServerError)
 			return
 		}
+
+		// Удаление уведомления через 30 минут
 		deleteNotificationAfterDelay(notification.ID, 30*time.Minute)
 	}
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, "SOS signal sent successfully!")
 }
+
 
 func deleteNotificationAfterDelay(notificationID uint, delay time.Duration) {
 	go func() {
