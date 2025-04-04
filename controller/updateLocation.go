@@ -64,21 +64,39 @@ func UpdateLiveLocation(w http.ResponseWriter, r *http.Request) {
 
 
 
-func GetLiveLocations(w http.ResponseWriter, r *http.Request) {
-    user, err := AuthenticateUser(r)
-    if err != nil {
-        http.Error(w, "Unauthorized", http.StatusUnauthorized)
-        return
-    }
+func GetEmergencyLocations(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("userID").(int)
 
-    var locations []users.LiveLocation
-    config.DB.
-        Where("contact_id = ?", user.ID).
-        Order("updated_at desc").
-        Find(&locations)
+	// Получаем список contact_id для текущего пользователя
+	var contactIDs []int
+	if err := config.DB.Model(&users.TrustedContact{}).
+		Where("user_id = ?", userID).
+		Pluck("contact_id", &contactIDs).Error; err != nil {
+		http.Error(w, "Failed to fetch contacts", http.StatusInternalServerError)
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(locations)
+	if len(contactIDs) == 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("[]")) // Возвращаем пустой список
+		return
+	}
+
+	// Получаем последние координаты для каждого contact_id
+	var locations []users.LiveLocation
+	if err := config.DB.Raw(`
+		SELECT DISTINCT ON (user_id) *
+		FROM live_locations
+		WHERE user_id IN ?
+		ORDER BY user_id, updated_at DESC
+	`, contactIDs).Scan(&locations).Error; err != nil {
+		http.Error(w, "Failed to fetch locations", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(locations)
 }
+
 
 
