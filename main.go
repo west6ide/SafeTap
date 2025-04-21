@@ -32,9 +32,12 @@ func main() {
 		&users.LiveLocation{},
 		&users.Notification{},
 		&users.SOSSignal{},
+		&users.FakeCall{},
+		&users.DangerousPerson{},
 		&users.GoogleUser{}); err != nil {
 		log.Fatalf("Ошибка миграции БД: %v", err)
 	}
+	
 
 	// Проверка подключения к БД
 	sqlDB, err := config.DB.DB()
@@ -47,6 +50,7 @@ func main() {
 	} else {
 		log.Println("Подключение к БД успешно")
 	}
+	controller.SeedDangerousPeople()
 
 	handler := http.NewServeMux()
 
@@ -70,6 +74,12 @@ func main() {
 
 	handler.HandleFunc("/location/update", controller.UpdateLiveLocation)
 	handler.HandleFunc("/location/emergency", controller.GetEmergencyContactsLocations)
+
+	handler.HandleFunc("/fake-calls/create", controller.ScheduleFakeCall)
+	handler.HandleFunc("/fake-calls/list", controller.GetUserFakeCalls)
+	handler.HandleFunc("/fake-calls/delete", controller.DeleteFakeCall)
+
+	handler.HandleFunc("/dangerous-people", controller.GetDangerousPeople)
 
 
 
