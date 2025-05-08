@@ -24,6 +24,7 @@ func main() {
 		log.Fatalf("Ошибка инициализации БД: %v", err)
 	}
 	controller.StartNotificationCleaner()
+	controller.SeedDangerousPeople()
 
 	// Миграция базы данных
 	if err := config.DB.AutoMigrate(
