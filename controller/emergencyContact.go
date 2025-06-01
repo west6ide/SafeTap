@@ -74,8 +74,38 @@ func GetEmergencyContacts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Структура, в которой будет и имя
+	type ContactWithName struct {
+		ID          uint      `json:"id"`
+		UserID      uint      `json:"user_id"`
+		ContactID   uint      `json:"contact_id"`
+		PhoneNumber string    `json:"phone_number"`
+		Name        string    `json:"name"`
+		CreatedAt   time.Time `json:"created_at"`
+	}
+
+	var result []ContactWithName
+
+	for _, contact := range contacts {
+		var contactUser users.User
+		name := "Unknown"
+
+		if err := config.DB.First(&contactUser, contact.ContactID).Error; err == nil {
+			name = contactUser.Name // 🔸 используем имя из users.User
+		}
+
+		result = append(result, ContactWithName{
+			ID:          contact.ID,
+			UserID:      contact.UserID,
+			ContactID:   contact.ContactID,
+			PhoneNumber: contact.PhoneNumber,
+			Name:        name,
+			CreatedAt:   contact.CreatedAt,
+		})
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(contacts)
+	json.NewEncoder(w).Encode(result)
 }
 
 // 📌 Удаление экстренного контакта (Delete)
