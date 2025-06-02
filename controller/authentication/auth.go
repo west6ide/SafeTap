@@ -222,7 +222,7 @@ func GetProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var user users.User
-	if err := config.DB.Where("email = ? AND provider = ?", claims.Phone, "local").First(&user).Error; err != nil {
+	if err := config.DB.Where("phone = ? AND provider = ?", claims.Phone, "local").First(&user).Error; err != nil {
 		http.Error(w, "User not found", http.StatusUnauthorized)
 		return
 	}
@@ -230,6 +230,7 @@ func GetProfile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
 }
+
 
 func Logout(w http.ResponseWriter, r *http.Request) {
 	authHeader := r.Header.Get("Authorization")
