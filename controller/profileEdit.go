@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -81,7 +82,7 @@ func authUser(r *http.Request) (*users.User, error) {
 	}
 
 	// Получаем user_id из токена
-	userID := uint(claims["user_id"].(float64)) // или int если у вас ID int
+	userID := uint(claims["user_id"].(uint)) // или int если у вас ID int
 
 	if err := config.DB.First(&user, userID).Error; err != nil {
 		return nil, fmt.Errorf("user not found")
