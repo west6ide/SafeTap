@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 type ProfileUpdateRequest struct {
@@ -64,10 +65,26 @@ func authUser(r *http.Request) (*users.User, error) {
 		return nil, fmt.Errorf("missing authorization header")
 	}
 
-	token := strings.TrimPrefix(authHeader, "Bearer ")
-	if err := config.DB.Where("access_token = ?", token).First(&user).Error; err != nil {
-		return nil, fmt.Errorf("invailed token")
+	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+
+	// Расшифровка токена
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return []byte(config.GetJWTSecret()), nil
+	})
+	if err != nil || !token.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return nil, fmt.Errorf("invalid claims")
+	}
+
+	// Получаем user_id из токена
+	userID := uint(claims["user_id"].(float64)) // или int если у вас ID int
+
+	if err := config.DB.First(&user, userID).Error; err != nil {
+		return nil, fmt.Errorf("user not found")
 	}
 	return &user, nil
-
 }
