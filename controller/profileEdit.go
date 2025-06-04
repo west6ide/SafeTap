@@ -87,7 +87,6 @@ func authUser(r *http.Request) (*users.User, error) {
 	}
 	userID := uint(userIDFloat)
 
-
 	if err := config.DB.First(&user, userID).Error; err != nil {
 		return nil, fmt.Errorf("user not found")
 	}
