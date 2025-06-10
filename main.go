@@ -82,8 +82,8 @@ func main() {
 	handler.HandleFunc("/dangerous-people", controller.GetDangerousPeople)
 
 	// Регистрация
-	http.HandleFunc("/crimes", controller.HandleCreateCrime)
-	http.HandleFunc("/crimes/get", controller.HandleGetCrimes)
+	handler.HandleFunc("/crimes", controller.HandleCreateCrime)
+	handler.HandleFunc("/crimes/get", controller.HandleGetCrimes)
 
 
 	// Настройка CORS
