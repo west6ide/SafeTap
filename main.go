@@ -35,10 +35,10 @@ func main() {
 		&users.SOSSignal{},
 		&users.FakeCall{},
 		&users.DangerousPerson{},
+		&users.CrimeReport{},
 		&users.GoogleUser{}); err != nil {
 		log.Fatalf("Ошибка миграции БД: %v", err)
 	}
-	
 
 	// Проверка подключения к БД
 	sqlDB, err := config.DB.DB()
@@ -81,8 +81,9 @@ func main() {
 
 	handler.HandleFunc("/dangerous-people", controller.GetDangerousPeople)
 
-
-
+	// Регистрация
+	http.HandleFunc("/crimes", controller.HandleCreateCrime)
+	http.HandleFunc("/crimes/get", controller.HandleGetCrimes)
 
 
 	// Настройка CORS
