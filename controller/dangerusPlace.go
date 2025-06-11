@@ -36,6 +36,11 @@ func HandleCreateCrime(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+    if req.AddressStreet == "" || req.AddressNumber == "" || req.Region == "" {
+        http.Error(w, "Address fields are incomplete", http.StatusBadRequest)
+        return
+    }
+
 	address := fmt.Sprintf("%s %s, %s", req.AddressStreet, req.AddressNumber, req.Region)
 	lat, lng, err := geocodeAddress(address)
 	if err != nil {
