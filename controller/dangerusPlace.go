@@ -22,8 +22,8 @@ func HandleCreateCrime(w http.ResponseWriter, r *http.Request) {
 		Article       string    `json:"article"`
 		Severity      string    `json:"severity"`
 		Region        string    `json:"region"`
-		AddressStreet string    `json:"address_street"`
-		AddressNumber string    `json:"address_number"`
+		AddressStreet string    `json:"street"`
+		AddressNumber string    `json:"house"`
 		PlaceType     string    `json:"place_type"`
 		Target        string    `json:"target"`
 		Department    string    `json:"department"`
