@@ -28,7 +28,7 @@ func HandleCreateCrime(w http.ResponseWriter, r *http.Request) {
 		Target        string    `json:"target"`
 		Department    string    `json:"department"`
 		CrimeDate     time.Time `json:"crime_date"`
-		KUSINumber    string    `json:"kuzi_number"`
+		KUSINumber    string    `json:"kusi_number"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -36,10 +36,10 @@ func HandleCreateCrime(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    if req.AddressStreet == "" || req.AddressNumber == "" || req.Region == "" {
-        http.Error(w, "Address fields are incomplete", http.StatusBadRequest)
-        return
-    }
+	if req.AddressStreet == "" || req.AddressNumber == "" || req.Region == "" {
+		http.Error(w, "Address fields are incomplete", http.StatusBadRequest)
+		return
+	}
 
 	address := fmt.Sprintf("%s %s, %s", req.AddressStreet, req.AddressNumber, req.Region)
 	lat, lng, err := geocodeAddress(address)
@@ -74,7 +74,6 @@ func HandleCreateCrime(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"message":"Crime saved"}`))
 }
 
-
 func HandleGetCrimes(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -90,7 +89,6 @@ func HandleGetCrimes(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(crimes)
 }
-
 
 func geocodeAddress(address string) (float64, float64, error) {
 	apiKey := os.Getenv("GOOGLE_API_KEY")
