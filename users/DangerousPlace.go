@@ -19,6 +19,3 @@ type CrimeReport struct {
 	Longitude  float64   `json:"longitude"`
 	CreatedAt  time.Time `json:"createdAt"`
 }
-
-
-
