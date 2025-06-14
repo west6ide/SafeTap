@@ -52,7 +52,6 @@ func main() {
 		log.Println("Подключение к БД успешно")
 	}
 
-	controller.SeedDangerousPeople()
 	handler := http.NewServeMux()
 
 	// Эндпоинты
