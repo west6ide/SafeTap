@@ -3,6 +3,7 @@ package controller
 import (
 	"Diploma/users"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"gorm.io/gorm"
@@ -27,6 +28,7 @@ func ShareRouteHandler(db *gorm.DB) http.HandlerFunc {
             return
         }
 
+        // Создаем маршрут
         route := users.SharedRoute{
             SenderID: req.SenderID,
             StartLat: req.StartLat,
@@ -42,6 +44,21 @@ func ShareRouteHandler(db *gorm.DB) http.HandlerFunc {
             return
         }
 
+        // Создаем уведомление о маршруте
+        notification := users.Notification{
+            UserID:    route.SenderID,
+            Message:   fmt.Sprintf("Shared route: %s (%s)", route.Distance, route.Duration),
+            Latitude:  route.StartLat,
+            Longitude: route.StartLng,
+            Type:      "route",
+            RouteID:   route.ID,
+        }
+
+        if err := db.Create(&notification).Error; err != nil {
+            http.Error(w, "Failed to create notification", http.StatusInternalServerError)
+            return
+        }
+
         w.WriteHeader(http.StatusCreated)
         json.NewEncoder(w).Encode(map[string]string{"status": "Route shared"})
     }
@@ -50,14 +67,14 @@ func ShareRouteHandler(db *gorm.DB) http.HandlerFunc {
 // GET /shared_routes?userId=123
 func GetSharedRoutesHandler(db *gorm.DB) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
-        userID, err := ParseUintQueryParam(r, "userId")
+        user, err := AuthenticateUser(r)
         if err != nil {
-            http.Error(w, "Invalid userId", http.StatusBadRequest)
+            http.Error(w, "Unauthorized", http.StatusUnauthorized)
             return
         }
 
         var routes []users.SharedRoute
-        if err := db.Where("sender_id = ?", userID).Find(&routes).Error; err != nil {
+        if err := db.Where("sender_id = ?", user.ID).Find(&routes).Error; err != nil {
             http.Error(w, "Failed to fetch routes", http.StatusInternalServerError)
             return
         }

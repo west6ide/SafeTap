@@ -56,13 +56,15 @@ type SOSSignal struct {
 
 
 type Notification struct {
-	ID        uint      `gorm:"primaryKey"`
-	UserID    uint      `gorm:"index" json:"user_id"`        // User who receives the notification
-	ContactID uint      `gorm:"index" json:"contact_id"`     // User who sent the SOS signal
-	Message   string    `json:"message"`
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
-	CreatedAt time.Time `json:"created_at"`
+    ID        uint      `gorm:"primaryKey"`
+    UserID    uint      `json:"userId"`
+    ContactID uint      `json:"contactId"`
+    Message   string    `json:"message"`
+    Latitude  float64   `json:"latitude"`
+    Longitude float64   `json:"longitude"`
+    CreatedAt time.Time `json:"createdAt"`
+    Type      string    `json:"type"` // "sos" или "route"
+    RouteID   uint      `json:"routeId" gorm:"default:0"` // ID связанного маршрута
 }
 
 
