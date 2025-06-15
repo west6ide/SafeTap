@@ -36,6 +36,7 @@ func main() {
 		&users.FakeCall{},
 		&users.DangerousPerson{},
 		&users.CrimeReport{},
+		&users.SharedRoute{},
 		&users.GoogleUser{}); err != nil {
 		log.Fatalf("Ошибка миграции БД: %v", err)
 	}
@@ -84,6 +85,10 @@ func main() {
 	// Регистрация
 	handler.HandleFunc("/crimes", controller.HandleCreateCrime)
 	handler.HandleFunc("/crimes/get", controller.HandleGetCrimes)
+
+	handler.HandleFunc("/share_route", controller.ShareRouteHandler(config.DB))
+	handler.HandleFunc("/shared_routes", controller.GetSharedRoutesHandler(config.DB))
+
 
 	// Настройка CORS
 	corsHandler := cors.New(cors.Options{
