@@ -6,6 +6,7 @@ import (
 	"Diploma/users"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -246,14 +247,22 @@ func HandleContactRequest(w http.ResponseWriter, r *http.Request) {
     }
 
     var request struct {
-        RequestID uint   `json:"request_id"`
-        Action    string `json:"action"` // "accept" or "reject"
+        RequestID    uint   `json:"request_id"`
+        Action       string `json:"action"` // "accept" or "reject"
+        NotificationID uint `json:"notification_id"` // 👈 Добавляем ID уведомления
     }
 
     if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
         http.Error(w, "Invalid request", http.StatusBadRequest)
         return
     }
+
+    // Удаляем уведомление независимо от результата
+    defer func() {
+        if err := config.DB.Where("id = ?", request.NotificationID).Delete(&users.Notification{}).Error; err != nil {
+            log.Printf("Failed to delete notification: %v", err)
+        }
+    }()
 
     // Находим запрос
     var contactRequest ContactRequest
