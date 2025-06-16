@@ -69,7 +69,8 @@ func main() {
 	handler.HandleFunc("/contacts/add", controller.AddEmergencyContact)       // Добавление
 	handler.HandleFunc("/contacts", controller.GetEmergencyContacts)          // Получение всех контактов
 	handler.HandleFunc("/contacts/delete", controller.DeleteEmergencyContact) // Удаление
-	handler.HandleFunc("/contacts/respond", controller.SendContactRequest)    // Отправка запроса)
+	handler.HandleFunc("/contacts/request", controller.SendContactRequest) // Новая реализация
+	handler.HandleFunc("/contacts/respond", controller.HandleContactRequest)
 
 	handler.HandleFunc("/sos", controller.SaveSOS)
 	handler.HandleFunc("/notifications", controller.GetNotifications)
