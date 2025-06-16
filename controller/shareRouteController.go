@@ -33,7 +33,7 @@ func ShareRouteHandler(db *gorm.DB) http.HandlerFunc {
             return
         }
 
-        // Создаем маршрут
+        // Create the route
         route := users.SharedRoute{
             SenderID: user.ID,
             StartLat: req.StartLat,
@@ -50,24 +50,26 @@ func ShareRouteHandler(db *gorm.DB) http.HandlerFunc {
             return
         }
 
-        // Получаем контакты пользователя
+        // Get user's contacts
         var contacts []users.TrustedContact
         if err := db.Where("user_id = ?", user.ID).Find(&contacts).Error; err != nil {
             http.Error(w, "Failed to get contacts", http.StatusInternalServerError)
             return
         }
 
-        // Создаем уведомления для каждого контакта
+        // Create notifications for each contact
         for _, contact := range contacts {
             notification := users.Notification{
-                UserID:    contact.ContactID,
-                ContactID: user.ID,
-                Message:   fmt.Sprintf("%s shared a route with you: %s (%s)", user.Name, route.Distance, route.Duration),
-                Latitude:  route.StartLat,
-                Longitude: route.StartLng,
-                Type:      "route",
-                RouteID:   route.ID,
-                CreatedAt: time.Now(),
+                UserID:      contact.ContactID,
+                ContactID:   user.ID,
+                Message:     fmt.Sprintf("%s shared a route with you: %s (%s)", user.Name, route.Distance, route.Duration),
+                Latitude:    route.StartLat,    // Start point latitude
+                Longitude:   route.StartLng,    // Start point longitude
+                DestLatitude:  route.DestLat,   // Destination latitude
+                DestLongitude: route.DestLng,   // Destination longitude
+                Type:        "route",
+                RouteID:     route.ID,
+                CreatedAt:   time.Now(),
             }
 
             if err := db.Create(&notification).Error; err != nil {

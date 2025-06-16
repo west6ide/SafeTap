@@ -62,6 +62,8 @@ type Notification struct {
     Message   string    `json:"message"`
     Latitude  float64   `json:"latitude"`
     Longitude float64   `json:"longitude"`
+	DestLatitude float64 `json:"destLatitude"`
+	DestLongitude float64 `json:"destLongitude"`
     CreatedAt time.Time `json:"createdAt"`
     Type      string    `json:"type"` // "sos" или "route"
     RouteID   uint      `json:"routeId" gorm:"default:0"` // ID связанного маршрута
