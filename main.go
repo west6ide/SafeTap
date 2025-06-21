@@ -24,6 +24,7 @@ func main() {
 		log.Fatalf("Ошибка инициализации БД: %v", err)
 	}
 	controller.StartNotificationCleaner()
+	controller.SeedDangerousPeople()
 
 	// Миграция базы данных
 	if err := config.DB.AutoMigrate(
@@ -68,7 +69,7 @@ func main() {
 	handler.HandleFunc("/contacts/add", controller.AddEmergencyContact)       // Добавление
 	handler.HandleFunc("/contacts", controller.GetEmergencyContacts)          // Получение всех контактов
 	handler.HandleFunc("/contacts/delete", controller.DeleteEmergencyContact) // Удаление
-	handler.HandleFunc("/contacts/request", controller.SendContactRequest) // Новая реализация
+	handler.HandleFunc("/contacts/request", controller.SendContactRequest)    // Новая реализация
 	handler.HandleFunc("/contacts/respond", controller.HandleContactRequest)
 
 	handler.HandleFunc("/sos", controller.SaveSOS)

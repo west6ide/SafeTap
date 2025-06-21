@@ -23,56 +23,117 @@ func SeedDangerousPeople() {
 	people := []users.DangerousPerson{
 		{
 			FullName: "Имя Фамилия",
-			City:     "Астана",
-			Address:  "Айдидар, жилой комплекс Улица Жумекен Нажимеденов, 16",
+			City:     "Алматы",
+			Address:  "Улица Тимирязева, 59Б ​Бостандыкский район",
 			PhotoURL: "https://www.mirgovorit.ru/static/users/default_profile_image.9acfe78b8e1c.png",
 		},
 		{
 			FullName: "Имя Фамилия",
-			City:     "Астана",
-			Address:  "Медиполь, жилой комплекс Улица Аманжол Болекпаев, 3",
+			City:     "Алматы",
+			Address:  "Улица Шопена, 25 ​Бостандыкский район",
 			PhotoURL: "https://www.mirgovorit.ru/static/users/default_profile_image.9acfe78b8e1c.png",
 		},
 		{
 			FullName: "Имя Фамилия",
-			City:     "Астана",
-			Address:  "Улица Арганаты, 11",
+			City:     "Алматы",
+			Address:  "Асыл Тобе, жилой комплекс Улица Егизбаева, 7/21 ​Бостандыкский район",
 			PhotoURL: "https://www.mirgovorit.ru/static/users/default_profile_image.9acfe78b8e1c.png",
 		},
 		{
 			FullName: "Имя Фамилия",
-			City:     "Астана",
-			Address:  "Хайвил Астана блок Е1, жилой комплекс Проспект Ракымжан Кошкарбаев, 8",
+			City:     "Алматы",
+			Address:  "Улица Шевченко, 149 ​Алмалинский район",
 			PhotoURL: "https://www.mirgovorit.ru/static/users/default_profile_image.9acfe78b8e1c.png",
 		},
 		{
 			FullName: "Имя Фамилия",
-			City:     "Астана",
-			Address:  "Ак Булак-3, жилой комплекс Переулок Тасшокы, 3",
+			City:     "Алматы",
+			Address:  "O'NER, жилой комплекс ​ЖК ONer​улица Ислама Каримова, 203 блок 2 Алмалинский район",
 			PhotoURL: "https://www.mirgovorit.ru/static/users/default_profile_image.9acfe78b8e1c.png",
 		},
 		{
 			FullName: "Имя Фамилия",
-			City:     "Астана",
-			Address:  "Проспект Бауыржан Момышулы, 22/4",
+			City:     "Алматы",
+			Address:  "Улица Тургут Озала, 94 ​Алмалинский район",
 			PhotoURL: "https://www.mirgovorit.ru/static/users/default_profile_image.9acfe78b8e1c.png",
 		},
 		{
 			FullName: "Имя Фамилия",
-			City:     "Астана",
-			Address:  "Olymp Palace, жилой комплекс ​ЖК Олимп палас​улица Туркестан, 8",
+			City:     "Алматы",
+			Address:  "Улица Прокофьева, 41 Тастак-2 м-н, Алмалинский район",
 			PhotoURL: "https://www.mirgovorit.ru/static/users/default_profile_image.9acfe78b8e1c.png",
 		},
 		{
 			FullName: "Имя Фамилия",
-			City:     "Астана",
-			Address:  "Sensata Park, жилой комплекс Улица Туркестан, 16/4",
+			City:     "Алматы",
+			Address:  "Жетысу-3 микрорайон, 67 Жетысу-3 м-н, Ауэзовский район",
 			PhotoURL: "https://www.mirgovorit.ru/static/users/default_profile_image.9acfe78b8e1c.png",
 		},
 		{
 			FullName: "Имя Фамилия",
-			City:     "Астана",
-			Address:  "Promenade Expo Block D, жилой комплекс Проспект Мангилик Ел, 51",
+			City:     "Алматы",
+			Address:  "Улица Жубанова, 7 Ауэзовский район",
+			PhotoURL: "https://www.mirgovorit.ru/static/users/default_profile_image.9acfe78b8e1c.png",
+		},
+
+
+
+
+
+
+
+		{
+			FullName: "Имя Фамилия",
+			City:     "Каскелен",
+			Address:  "Микрорайон Алтын ауыл, 6 ​Алтын ауыл м-н",
+			PhotoURL: "https://www.mirgovorit.ru/static/users/default_profile_image.9acfe78b8e1c.png",
+		},
+		{
+			FullName: "Имя Фамилия",
+			City:     "Каскелен",
+			Address:  "Проспект Абылай хана, 26Б/2 ",
+			PhotoURL: "https://www.mirgovorit.ru/static/users/default_profile_image.9acfe78b8e1c.png",
+		},
+		{
+			FullName: "Имя Фамилия",
+			City:     "Каскелен",
+			Address:  "Арнау, жилой комплекс Проспект Абылай хана, 2/5 блок 5",
+			PhotoURL: "https://www.mirgovorit.ru/static/users/default_profile_image.9acfe78b8e1c.png",
+		},
+		{
+			FullName: "Имя Фамилия",
+			City:     "Каскелен",
+			Address:  "Проспект Абылай хана, 19",
+			PhotoURL: "https://www.mirgovorit.ru/static/users/default_profile_image.9acfe78b8e1c.png",
+		},
+		{
+			FullName: "Имя Фамилия",
+			City:     "Каскелен",
+			Address:  "Улица 10 лет Независимости, 56",
+			PhotoURL: "https://www.mirgovorit.ru/static/users/default_profile_image.9acfe78b8e1c.png",
+		},
+		{
+			FullName: "Имя Фамилия",
+			City:     "Каскелен",
+			Address:  "Улица Абен Омерали, 47 · проспект Абылай хана, 82",
+			PhotoURL: "https://www.mirgovorit.ru/static/users/default_profile_image.9acfe78b8e1c.png",
+		},
+		{
+			FullName: "Имя Фамилия",
+			City:     "Каскелен",
+			Address:  "Улица Карасай батыра, 2",
+			PhotoURL: "https://www.mirgovorit.ru/static/users/default_profile_image.9acfe78b8e1c.png",
+		},
+		{
+			FullName: "Имя Фамилия",
+			City:     "Каскелен",
+			Address:  "Алатау Ажары, жилой комплекс Аубая Байгазиева улица, 35Б блок Б",
+			PhotoURL: "https://www.mirgovorit.ru/static/users/default_profile_image.9acfe78b8e1c.png",
+		},
+		{
+			FullName: "Имя Фамилия",
+			City:     "Каскелен",
+			Address:  "Улица Бауыржана Момышулы, 3",
 			PhotoURL: "https://www.mirgovorit.ru/static/users/default_profile_image.9acfe78b8e1c.png",
 		},
 	}
